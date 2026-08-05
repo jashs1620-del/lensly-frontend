@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; connect-src 'self' http://localhost:5000 https://lensly-backend.onrender.com https://accounts.google.com; frame-src https://accounts.google.com;"><meta name="referrer" content="no-referrer">
+<title>Lensly – See Clearly</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,600&family=DM+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<!-- SVG eye icon used throughout -->
+<svg style="display:none" id="svgDefs">
+  <symbol id="eye-icon" viewBox="0 0 24 24" fill="none">
+    <ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/>
+    <circle cx="12" cy="12" r="3.5" fill="white"/>
+    <circle cx="13.2" cy="10.8" r="1" fill="rgba(0,0,0,0.4)"/>
+  </symbol>
+</svg>
+
+<div class="toast" id="toast"></div>
+
+<!-- REORDER BANNER -->
+<div class="reorder-banner" id="reorderBanner">
+  <div style="font-size:1.6rem;flex-shrink:0;">🔔</div>
+  <div style="flex:1;">
+    <div id="reorderProduct" style="font-weight:800;font-size:.84rem;margin-bottom:2px;"></div>
+    <div id="reorderMsg" style="font-size:.79rem;opacity:.85;font-style:italic;"></div>
+    <div style="display:flex;gap:8px;margin-top:9px;">
+      <button onclick="goHome();dismissReorder();" style="background:white;color:var(--g1);border:none;border-radius:8px;padding:6px 13px;font-weight:700;font-size:.79rem;cursor:pointer;font-family:DM Sans,sans-serif;">Reorder Now</button>
+      <button onclick="dismissReorder()" style="background:rgba(255,255,255,.15);color:white;border:none;border-radius:8px;padding:6px 13px;font-weight:600;font-size:.79rem;cursor:pointer;font-family:DM Sans,sans-serif;">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAMERA PERMISSION MODAL -->
+<div class="modal-overlay" id="camPermModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCamPermModal()">✕</button>
+    <div class="cam-perm-icon">📷</div>
+    <h3>Allow Camera Access</h3>
+    <p>Lensly needs your camera to power Virtual Try-On. Your video is processed entirely on your device and is never uploaded or stored.</p>
+    <ul class="cam-perm-list">
+      <li>Live preview only — nothing is uploaded</li>
+      <li>Stop the camera any time by closing the window</li>
+      <li>Photos are saved only when you tap "Save Photo"</li>
+    </ul>
+    <button class="modal-btn" onclick="proceedToCamera()">Allow Camera & Start Try-On</button>
+    <button class="clear-btn" style="margin-top:9px;" onclick="closeCamPermModal()">Not Now</button>
+  </div>
+</div>
+
+<!-- FILTER DRAWER -->
+<div class="filter-overlay" id="filterOverlay" onclick="closeFilter()"></div>
+<div class="filter-drawer" id="filterDrawer">
+  <div class="filter-header">
+    <h3>⚙️ Filter Lenses</h3>
+    <button class="modal-close" style="position:static;" onclick="closeFilter()">✕</button>
+  </div>
+  <div class="filter-section">
+    <h4>Brand <span class="clear-link" onclick="clearBrandFilter()">Clear</span></h4>
+    <div class="filter-chips" id="brandChips">
+      <div class="chip active" onclick="toggleChip(this)">Bausch + Lomb</div>
+      <div class="chip active" onclick="toggleChip(this)">CooperVision</div>
+    </div>
+  </div>
+  <div class="filter-section">
+    <h4>Lens Type</h4>
+    <div class="filter-chips" id="typeChips">
+      <div class="chip" onclick="toggleChip(this)">Regular</div>
+      <div class="chip" onclick="toggleChip(this)">For Astigmatism</div>
+      <div class="chip" onclick="toggleChip(this)">HD Vision</div>
+      <div class="chip" onclick="toggleChip(this)">Monthly</div>
+      <div class="chip" onclick="toggleChip(this)">UV Blocking</div>
+    </div>
+  </div>
+  <div class="filter-section">
+    <h4>Power</h4>
+    <div class="filter-chips" id="powerChips">
+      <div class="chip" onclick="toggleChip(this)">Negative (–)</div>
+      <div class="chip" onclick="toggleChip(this)">Positive (+)</div>
+    </div>
+  </div>
+  <div class="filter-section">
+    <h4>Lens Colour</h4>
+    <div class="color-chips">
+      <div class="cc-wrap active" onclick="toggleColorChip(this)"><div class="cc-swatch" style="background:#D4E6FF;"></div><div class="cc-label">Clear</div></div>
+      <div class="cc-wrap" onclick="toggleColorChip(this)"><div class="cc-swatch" style="background:#6BAED6;"></div><div class="cc-label">Blue</div></div>
+      <div class="cc-wrap" onclick="toggleColorChip(this)"><div class="cc-swatch" style="background:#74C476;"></div><div class="cc-label">Green</div></div>
+      <div class="cc-wrap" onclick="toggleColorChip(this)"><div class="cc-swatch" style="background:#9E9AC8;"></div><div class="cc-label">Violet</div></div>
+      <div class="cc-wrap" onclick="toggleColorChip(this)"><div class="cc-swatch" style="background:#41B6C4;"></div><div class="cc-label">Aqua</div></div>
+      <div class="cc-wrap" onclick="toggleColorChip(this)"><div class="cc-swatch" style="background:#D2885B;"></div><div class="cc-label">Hazel</div></div>
+      <div class="cc-wrap" onclick="toggleColorChip(this)"><div class="cc-swatch" style="background:#969696;"></div><div class="cc-label">Grey</div></div>
+      <div class="cc-wrap" onclick="toggleColorChip(this)"><div class="cc-swatch" style="background:#8C510A;"></div><div class="cc-label">Brown</div></div>
+    </div>
+  </div>
+  <div class="filter-section">
+    <h4>Price Range (₹)</h4>
+    <div class="price-range">
+      <input type="number" class="price-input" id="priceMin" placeholder="Min" value="300">
+      <span style="color:var(--muted);">–</span>
+      <input type="number" class="price-input" id="priceMax" placeholder="Max" value="3000">
+    </div>
+  </div>
+  <button class="apply-btn" onclick="applyFilter()">✅ Apply Filters</button>
+  <button class="clear-btn" onclick="clearFilter()">Clear All</button>
+</div>
+
+<!-- SEARCH OVERLAY -->
+<div class="search-overlay" id="searchOverlay">
+  <input type="text" class="search-input" id="searchInput" placeholder="Search lenses, brands..." oninput="handleSearch(this.value)">
+  <button style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);" onclick="closeSearch()">✕</button>
+</div>
+
+<!-- TRY-ON MODAL -->
+<div class="modal-overlay" id="tryOnModal">
+  <div class="tryon-modal-inner">
+    <div class="tryon-header">
+      <div>
+        <div style="color:white;font-weight:700;font-size:.96rem;">👁️ Virtual Try-On</div>
+        <div id="tryOnProductName" style="color:rgba(255,255,255,.65);font-size:.76rem;"></div>
+      </div>
+      <button onclick="closeTryOn()" style="background:rgba(255,255,255,.12);border:none;color:white;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;">✕</button>
+    </div>
+    <div class="tryon-video-wrap">
+      <video id="tryOnVideo" autoplay muted playsinline></video>
+      <canvas id="tryOnCanvas"></canvas>
+      <div class="tryon-loading" id="tryOnLoading" style="display:none;">
+        <div class="tryon-spinner"></div>
+        <div id="tryOnLoadingText" style="font-size:.84rem;">Starting camera…</div>
+      </div>
+    </div>
+    <div class="tryon-body">
+      <div id="tryOnStatus" style="color:#E53E3E;font-size:.8rem;text-align:center;min-height:18px;margin-bottom:7px;"></div>
+      <div class="tryon-tip">💡 Face the camera with good lighting. The lens tint overlay shows placement on your eyes.</div>
+      <div class="tryon-actions">
+        <button class="tryon-snap" onclick="captureTryOn()">📸 Save Photo</button>
+        <button class="tryon-add" onclick="addFromDetail();closeTryOn();">🛒 Add to Cart</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SPLASH ════ -->
+<div class="page active" id="splashPage">
+  <div class="splash-stars" id="splashStars"></div>
+  <div class="splash-glow-ring"></div>
+  <div class="splash-wrap">
+    <div class="splash-logo-wrap">
+      <div class="lensly-eye-icon">
+        <svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/><circle cx="13.2" cy="10.8" r="1" fill="rgba(108,71,255,0.6)"/></svg>
+      </div>
+      <div class="splash-brand">Lensly</div>
+      <div class="splash-brand-sub">See Clearly · Look Sharp</div>
+    </div>
+    <div class="splash-info">
+      <div class="splash-info-title">Premium Contact Lenses<br>Delivered to Your Door</div>
+      <div class="splash-info-sub">Genuine Cooper Vision lenses · All powers available · Fast delivery</div>
+      <div class="splash-pills">
+        <div class="splash-pill">✅ Genuine</div>
+        <div class="splash-pill">🚚 Fast Delivery</div>
+        <div class="splash-pill">💎 All Powers</div>
+        <div class="splash-pill">📦 6 Lenses/Box</div>
+      </div>
+    </div>
+    <div class="splash-slogans">
+      <div class="sp-sl" id="spl0">Life's blurry enough. Your vision doesn't have to be.</div>
+      <div class="sp-sl" id="spl1">Staring at screens. Not settling for strain.</div>
+      <div class="sp-sl" id="spl2">Focus on your goals. We'll handle the focus.</div>
+    </div>
+    <div class="splash-dots">
+      <div class="sp-dot on" id="dot0"></div>
+      <div class="sp-dot" id="dot1"></div>
+      <div class="sp-dot" id="dot2"></div>
+    </div>
+    <div class="splash-bar"><div class="splash-bar-fill" id="splashBarFill"></div></div>
+  </div>
+</div>
+
+<!-- ════ LOGIN ════ -->
+<div class="page" id="loginPage">
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="login-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/><circle cx="13.2" cy="10.8" r="1" fill="rgba(108,71,255,0.5)"/></svg>
+        </div>
+        <div class="login-logo-text">Lensly</div>
+      </div>
+      <div class="login-tag">See Clearly · Look Sharp 👁️</div>
+      <div class="login-title">Welcome! Sign in to continue</div>
+      <div style="position:relative; width:100%;">
+  <button class="auth-btn" style="pointer-events:none;">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Continue with Google
+  </button>
+  <div id="hiddenGoogleBtn" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.01; overflow:hidden;"></div>
+</div>
+      <p class="login-fine">By continuing you agree to our Terms & Privacy Policy</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════ HOME ════ -->
+<div class="page" id="homePage">
+  <div class="navbar">
+    <div class="nav-logo" onclick="goHome()">
+      <div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/><circle cx="13.2" cy="10.8" r="1" fill="rgba(108,71,255,0.5)"/></svg></div>
+      <div class="nav-logo-text">Lensly</div>
+    </div>
+    <div class="nav-right">
+      <button class="nav-icon-btn" onclick="openSearch()">🔍</button>
+      <button class="nav-icon-btn" onclick="openWishlistPage()">🤍<span class="wishlist-badge" id="wishlistBadge">0</span></button>
+      <button class="filter-btn" onclick="openFilter()">⚙️ Filter</button>
+      <button class="cart-btn" onclick="goTo('cartPage')">🛒<span class="cart-badge" id="cartBadge">0</span></button>
+      <div class="user-avatar" id="userAvatar" onclick="goTo('profilePage')">U</div>
+    </div>
+  </div>
+  <div class="home-stripe"></div>
+
+  <!-- HOME BANNER with slogan only (info moved to splash) -->
+  <div class="home-banner">
+    <div class="home-banner-inner">
+      <div class="home-brand-row">
+        <div class="home-brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" width="24" height="24"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/><circle cx="13.2" cy="10.8" r="1" fill="rgba(108,71,255,0.5)"/></svg>
+        </div>
+        <div class="home-brand-text">Lensly</div>
+      </div>
+      <div class="home-slogan">"Life's blurry enough.<br>Your vision doesn't<br>have to be."</div>
+      <div class="home-slogan-underline"></div>
+    </div>
+  </div>
+
+  <div class="section-title">✨ Collections</div>
+  <div class="section-sub">Tap a collection to browse lenses curated for you</div>
+  <div class="section-rule"></div>
+  <div class="collections-stack" id="collectionsStack"></div>
+
+  <div class="section-title">💡 You Might Also Like</div>
+  <div class="rec-scroll" id="recScroll"></div>
+
+  <div style="height:80px;"></div>
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="goHome()"><span>🏠</span>Home</button>
+    <button class="nav-item" onclick="goTo('cartPage')"><span>🛒</span>Cart</button>
+    <button class="nav-item" onclick="goTo('trackingPage')"><span>📦</span>Orders</button>
+    <button class="nav-item" onclick="goTo('profilePage')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- ════ ALL PRODUCTS OVERLAY ════ -->
+<div class="prod-overlay" id="prodOverlay">
+  <div class="po-header">
+    <button class="po-close" onclick="closeProdOverlay()">✕</button>
+    <div class="po-title" id="poTitle">All Products</div>
+    <input type="text" class="po-search" placeholder="Search…" oninput="handleOverlaySearch(this.value)">
+  </div>
+  <div class="products-grid" id="prodOverlayGrid"></div>
+</div>
+
+<!-- ════ WISHLIST OVERLAY ════ -->
+<div class="prod-overlay" id="wishlistOverlay">
+  <div class="po-header">
+    <button class="po-close" onclick="closeWishlistOverlay()">✕</button>
+    <div class="po-title">❤️ My Wishlist</div>
+  </div>
+  <div class="products-grid" id="wishlistGrid"></div>
+</div>
+
+<!-- ════ DETAIL ════ -->
+<div class="page" id="detailPage">
+  <div class="navbar">
+    <div class="nav-logo" onclick="goHome()">
+      <div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/><circle cx="13.2" cy="10.8" r="1" fill="rgba(108,71,255,0.5)"/></svg></div>
+      <div class="nav-logo-text">Lensly</div>
+    </div>
+    <div class="nav-right"><button class="cart-btn" onclick="goTo('cartPage')">🛒<span class="cart-badge" id="cartBadge2">0</span></button></div>
+  </div>
+  <button class="detail-back" onclick="goBack()">← Back</button>
+  <div class="detail-img-wrap"><img id="detailImg" src="#" alt=""></div>
+  <div class="detail-body">
+    <div class="detail-brand" id="detailBrand"></div>
+    <div class="detail-name" id="detailName"></div>
+    <div class="detail-price" id="detailPrice"></div>
+    <div class="detail-stars" id="detailStars"></div>
+    <div id="detailBadges"></div>
+    <div class="detail-section-title">About this lens</div>
+    <div class="detail-desc" id="detailDesc"></div>
+    <div class="detail-section-title">Select Power (SPH) <span style="font-size:.77rem;font-weight:400;color:var(--muted);">— required</span></div>
+    <div class="power-grid" id="powerGrid"></div>
+    <button class="tryon-btn" onclick="requestTryOn()">👁️ Virtual Try-On – See how it looks on you</button>
+    <div class="return-policy-box">
+      <h4>↩️ Easy Returns</h4>
+      <p>Unopened boxes returnable within 7 days of delivery for full refund. Damaged or incorrect items replaced free of cost. Email support@lensly.in with your Order ID to start a return.</p>
+    </div>
+    <div class="detail-section-title">💡 People Also Bought</div>
+    <div class="rec-scroll" id="detailRec" style="padding:0;"></div>
+  </div>
+  <div class="detail-buy-bar">
+    <button class="add-cart-bar-btn" onclick="addFromDetail()">+ Add to Cart</button>
+    <button class="buy-now-btn" onclick="buyNowClick()">Buy Now 🛍️</button>
+  </div>
+</div>
+
+<!-- ════ CART ════ -->
+<div class="page" id="cartPage">
+  <div class="navbar">
+    <div class="nav-logo" onclick="goHome()">
+      <div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/></svg></div>
+      <div class="nav-logo-text">Lensly</div>
+    </div>
+    <div class="nav-right"><button class="nav-icon-btn" onclick="goBack()">🏠</button></div>
+  </div>
+  <div class="pg-title">🛒 My Cart</div>
+  <div class="cart-body" id="cartBody"></div>
+  <div style="height:80px;"></div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="goHome()"><span>🏠</span>Home</button>
+    <button class="nav-item active"><span>🛒</span>Cart</button>
+    <button class="nav-item" onclick="goTo('trackingPage')"><span>📦</span>Orders</button>
+    <button class="nav-item" onclick="goTo('profilePage')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- ════ CHECKOUT ════ -->
+<div class="page" id="checkoutPage">
+  <div class="navbar">
+    <div class="nav-logo" onclick="goHome()"><div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/></svg></div><div class="nav-logo-text">Lensly</div></div>
+    <div class="nav-right"><button class="nav-icon-btn" onclick="goBack()">←</button></div>
+  </div>
+  <div class="pg-title">📋 Delivery Details</div>
+  <div class="checkout-body">
+    <div class="checkout-slogan" id="checkoutSlogan"></div>
+    <div class="form-card"><h3>👤 Your Information</h3>
+      <div class="input-group"><label>Full Name *</label><input type="text" id="coName" placeholder="Your full name"></div>
+      <div class="input-group"><label>Mobile Number *</label><input type="tel" id="coPhone" placeholder="+91 98765 43210"></div>
+      <div class="input-group"><label>Email (optional)</label><input type="email" id="coEmail" placeholder="email@example.com"></div>
+    </div>
+    <div class="form-card"><h3>📍 Delivery Address</h3>
+      <div class="input-group"><label>House / Flat No., Building *</label><input type="text" id="coAddr1" placeholder="e.g. Flat 4B, Sunshine Apartments"></div>
+      <div class="input-group"><label>Street / Area *</label><input type="text" id="coAddr2" placeholder="Street name, locality"></div>
+      <div class="input-group"><label>City *</label><input type="text" id="coCity" placeholder="City"></div>
+      <div class="input-group"><label>State *</label><input type="text" id="coState" placeholder="State"></div>
+      <div class="input-group"><label>PIN Code *</label><input type="number" id="coPin" placeholder="400001"></div>
+      <div class="input-group"><label>Prescription Notes (optional)</label><textarea id="coNotes" placeholder="e.g. Left eye: -2.50, Right eye: -3.00"></textarea></div>
+    </div>
+    <div class="form-card"><h3>📦 Order Summary</h3><div id="coSummary"></div></div>
+    <button class="place-order-btn" onclick="goToPayment()">Continue to Payment →</button>
+  </div>
+</div>
+
+<!-- ════ PAYMENT ════ -->
+<div class="page" id="paymentPage">
+  <div class="navbar">
+    <div class="nav-logo" onclick="goHome()"><div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/></svg></div><div class="nav-logo-text">Lensly</div></div>
+    <div class="nav-right"><button class="nav-icon-btn" onclick="goBack()">←</button></div>
+  </div>
+  <div class="pg-title">💳 Choose Payment</div>
+  <div class="payment-body">
+    <div class="pay-amt-card"><div class="pay-amt-label">Total Amount</div><div class="pay-amt-val" id="payAmount">₹0</div></div>
+    <div class="payment-option" onclick="selPay(this,'upi')"><div class="payment-icon" style="background:#E8F5E9;">💚</div><div><div class="payment-label">GPay / PhonePe / UPI</div><div class="payment-sub">Any UPI app</div></div></div>
+    <div class="payment-option" onclick="selPay(this,'card')"><div class="payment-icon" style="background:#F7F5FF;">💳</div><div><div class="payment-label">Credit / Debit Card</div><div class="payment-sub">Visa, Mastercard, RuPay</div></div></div>
+    <div class="payment-option" onclick="selPay(this,'cod')"><div class="payment-icon" style="background:#FFF8E1;">💵</div><div><div class="payment-label">Cash on Delivery</div><div class="payment-sub">Pay when you receive</div></div></div>
+    <div id="upiSec" style="display:none;margin-top:12px;"><div class="form-card"><h3>UPI Details</h3><div style="text-align:center;padding:11px;"><div style="font-size:2rem;margin-bottom:6px;">📱</div><div style="font-weight:700;margin-bottom:4px;">UPI ID: lensly@upi</div><div style="font-size:.76rem;color:var(--muted);">Open GPay / PhonePe and pay to this UPI ID</div></div></div></div>
+    <div id="cardSec" style="display:none;margin-top:12px;"><div class="form-card"><h3>Card Details</h3>
+      <div class="input-group"><label>Card Number</label><input type="text" placeholder="1234 5678 9012 3456"></div>
+      <div style="display:flex;gap:10px;"><div class="input-group" style="flex:1;"><label>Expiry</label><input type="text" placeholder="MM/YY"></div><div class="input-group" style="flex:1;"><label>CVV</label><input type="number" placeholder="123"></div></div>
+      <div class="input-group"><label>Name on Card</label><input type="text" placeholder="Full name"></div>
+    </div></div>
+    <button class="pay-btn" onclick="confirmPayment()">Confirm & Pay 🎉</button>
+  </div>
+</div>
+
+<!-- ════ TRACKING ════ -->
+<div class="page" id="trackingPage">
+  <div class="navbar">
+    <div class="nav-logo" onclick="goHome()"><div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/></svg></div><div class="nav-logo-text">Lensly</div></div>
+    <div class="nav-right"><button class="nav-icon-btn" onclick="goHome()">🏠</button></div>
+  </div>
+  <div class="success-page">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Order Placed!</div>
+    <div class="success-sub" id="confirmSlogan">Thank you for ordering! Your lenses are on the way.</div>
+    <div class="tracking-card">
+      <div style="font-family:Space Grotesk,sans-serif;font-weight:700;font-size:.94rem;margin-bottom:5px;color:var(--ink);">📦 Order Tracking</div>
+      <div class="tracking-id" id="trackingId">Order ID: #LNS000001</div>
+      <div class="tracking-steps">
+        <div class="t-step"><div class="t-step-dot done">✓</div><div><div class="t-step-label">Order Confirmed</div><div class="t-step-time">Just now</div></div></div>
+        <div class="t-step"><div class="t-step-dot active">→</div><div><div class="t-step-label">Processing & Packing</div><div class="t-step-time">Within 24 hours</div></div></div>
+        <div class="t-step"><div class="t-step-dot pending"></div><div><div class="t-step-label">Shipped 🕊️</div><div class="t-step-time">1–2 days</div></div></div>
+        <div class="t-step"><div class="t-step-dot pending"></div><div><div class="t-step-label">Out for Delivery</div><div class="t-step-time">2–4 days</div></div></div>
+        <div class="t-step"><div class="t-step-dot pending"></div><div><div class="t-step-label">Delivered 🏠</div><div class="t-step-time">3–5 days</div></div></div>
+      </div>
+    </div>
+    <div class="return-policy-box" style="text-align:left;margin-bottom:17px;">
+      <h4>📞 Need Help?</h4>
+      <p>Email us at <strong>support@lensly.in</strong> — we respond within 24 hours. Include your Order ID above for faster help.</p>
+    </div>
+    <button class="continue-btn" onclick="goHome();resetCart();">Continue Shopping 🛍️</button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="goHome()"><span>🏠</span>Home</button>
+    <button class="nav-item" onclick="goTo('cartPage')"><span>🛒</span>Cart</button>
+    <button class="nav-item active"><span>📦</span>Orders</button>
+    <button class="nav-item" onclick="goTo('profilePage')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- ════ PROFILE ════ -->
+<div class="page" id="profilePage">
+  <div class="navbar">
+    <div class="nav-logo" onclick="goHome()"><div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/></svg></div><div class="nav-logo-text">Lensly</div></div>
+    <div class="nav-right"><button class="nav-icon-btn" onclick="goBack()">←</button></div>
+  </div>
+  <div class="profile-hero">
+    <div class="profile-avatar-lg" id="profileAvatarLg">U</div>
+    <div class="profile-name" id="profileNameLg">Guest User</div>
+    <div class="profile-meta" id="profileMetaLg">Member since today</div>
+  </div>
+  <div class="profile-body">
+    <div class="profile-section">
+      <h3>📊 Your Activity</h3>
+      <div class="profile-stat-row">
+        <div class="profile-stat"><div class="profile-stat-num" id="statOrders">0</div><div class="profile-stat-label">Orders</div></div>
+        <div class="profile-stat"><div class="profile-stat-num" id="statCart">0</div><div class="profile-stat-label">In Cart</div></div>
+        <div class="profile-stat"><div class="profile-stat-num" id="statSaved">₹0</div><div class="profile-stat-label">Saved</div></div>
+      </div>
+    </div>
+    <div class="profile-section">
+      <h3>✏️ Edit Profile</h3>
+      <div class="input-group"><label>Full Name</label><input type="text" id="profName" placeholder="Your full name"></div>
+      <div class="input-group"><label>Email Address</label><input type="email" id="profEmail" placeholder="you@example.com"></div>
+      <div class="input-group" style="margin-bottom:0;"><label>Mobile Number</label><input type="tel" id="profPhone" placeholder="+91 98765 43210"></div>
+      <button class="modal-btn" style="margin-top:13px;" onclick="saveProfile()">Save Changes</button>
+    </div>
+    <div class="profile-section">
+      <h3>📦 My Orders</h3>
+      <div id="profileOrdersList"><p style="font-size:.81rem;color:var(--muted);">No orders yet.</p></div>
+    </div>
+    <div class="profile-section">
+      <h3>↩️ Returns & Exchanges</h3>
+      <p style="font-size:.79rem;color:var(--muted);line-height:1.65;margin-bottom:11px;">Unopened boxes returnable within 7 days of delivery. Contact us with your Order ID and we'll arrange free pickup and process your refund in 5–7 business days.</p>
+      <button class="clear-btn" onclick="showToast('Return request submitted! We will email you. 📨')">Request a Return</button>
+    </div>
+    <div class="profile-section">
+      <h3>💬 Need Help?</h3>
+      <div class="help-contact-row">
+        <div style="font-size:1.4rem;">✉️</div>
+        <div>
+          <div class="help-contact-label">Email us anytime</div>
+          <div class="help-contact-value">support@lensly.in</div>
+        </div>
+      </div>
+      <p style="font-size:.74rem;color:var(--muted);margin-top:10px;">We respond within 24 hours on business days.</p>
+    </div>
+    <div class="profile-section">
+      <h3>⚙️ Account</h3>
+      <div class="profile-list-item" onclick="showToast('Signed out')">
+        <div class="profile-list-icon">🚪</div>
+        <div><div class="profile-list-title">Sign Out</div><div class="profile-list-sub">Log out of Lensly</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="goHome()"><span>🏠</span>Home</button>
+    <button class="nav-item" onclick="goTo('cartPage')"><span>🛒</span>Cart</button>
+    <button class="nav-item" onclick="goTo('trackingPage')"><span>📦</span>Orders</button>
+    <button class="nav-item active"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+
+<!-- MediaPipe Face Mesh (real-time eye/iris tracking for Virtual Try-On) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

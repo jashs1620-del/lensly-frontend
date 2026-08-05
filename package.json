@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "cloudinary": "^1.41.3",
+    "multer": "^2.2.0",
+    "multer-storage-cloudinary": "^4.0.0",
+    "otp-generator": "^4.0.1",
+    "razorpay": "^2.9.8"
+  }
+}
