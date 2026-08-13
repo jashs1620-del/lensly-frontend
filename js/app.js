@@ -1182,6 +1182,7 @@ async function verifyPaymentWithBackend(razorpayResponse, orderId){
 
     document.getElementById('trackingId').textContent = 'Order ID: ' + orderId;
     document.getElementById('confirmSlogan').textContent = pickSlogan(SLOGANS.orderConfirm);
+    renderTrackingSteps('Processing');
     pageHistory = [];
     goTo('trackingPage');
     showToast('🎉 Order placed successfully!');
@@ -1191,6 +1192,46 @@ async function verifyPaymentWithBackend(razorpayResponse, orderId){
     console.error(err);
     showToast('⚠️ Payment verification failed');
   }
+}
+
+// ═══════════════════════════════════════
+//  LIVE ORDER TRACKING
+// ═══════════════════════════════════════
+const STATUS_STEPS = ["Order Confirmed", "Processing", "Shipped", "Out for Delivery", "Delivered"];
+const STATUS_TIMES = ["Just now", "Within 24 hours", "1-2 days", "2-4 days", "3-5 days"];
+
+function renderTrackingSteps(currentStatus) {
+  // "Order Confirmed" is always considered done once an order exists.
+  // Map the real backend status onto the remaining 4 steps.
+  const realSteps = ["Processing", "Shipped", "Out for Delivery", "Delivered"];
+  let currentIndex = realSteps.indexOf(currentStatus);
+  if (currentIndex === -1) currentIndex = 0; // fallback to Processing if unknown/null
+
+  const activeStepIndex = currentIndex + 1; // +1 because "Order Confirmed" is step 0
+
+  const el = document.getElementById('trackingSteps');
+  if (!el) return;
+
+  el.innerHTML = STATUS_STEPS.map((label, i) => {
+    let dotClass = 'pending';
+    let dotContent = '';
+    if (i < activeStepIndex) { dotClass = 'done'; dotContent = '✓'; }
+    else if (i === activeStepIndex) { dotClass = 'active'; dotContent = '→'; }
+
+    return `<div class="t-step">
+      <div class="t-step-dot ${dotClass}">${dotContent}</div>
+      <div>
+        <div class="t-step-label">${label}</div>
+        <div class="t-step-time">${STATUS_TIMES[i]}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewOrderTracking(orderId, status) {
+  document.getElementById('trackingId').textContent = 'Order ID: #' + String(orderId).slice(0,8).toUpperCase();
+  renderTrackingSteps(status);
+  goTo('trackingPage');
 }
 
 // ═══════════════════════════════════════
@@ -1256,10 +1297,10 @@ async function renderProfile(){
     list.innerHTML = '<p style="font-size:.82rem;color:var(--text-light);">No orders yet.</p>';
   } else {
     list.innerHTML = orders.slice(0, 5).map(o => {
-      const status = o.shipping_status || o.payment_status || 'Processing';
+      const status = o.shipping_status || 'Processing';
       const amount = o.total_amount ? `₹${o.total_amount}` : '';
       const date = o.created_at ? new Date(o.created_at).toLocaleDateString() : '';
-      return `<div class="profile-list-item">
+      return `<div class="profile-list-item"> onclick="viewOrderTracking('${o.id}','${status}')">
         <div class="profile-list-icon">📦</div>
         <div class="profile-list-text">
           <div class="profile-list-title">Order #${_e(String(o.id).slice(0,8))}</div>
