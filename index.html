@@ -248,7 +248,7 @@
   <div class="bottom-nav">
     <button class="nav-item active" onclick="goHome()"><span>🏠</span>Home</button>
     <button class="nav-item" onclick="goTo('cartPage')"><span>🛒</span>Cart</button>
-    <button class="nav-item" onclick="goTo('profilePage')"><span>📦</span>Orders</button>
+    <button class="nav-item" onclick="goTo('ordersPage')"><span>📦</span>Orders</button>
     <button class="nav-item" onclick="goTo('profilePage')"><span>👤</span>Profile</button>
   </div>
 </div>
@@ -322,7 +322,7 @@
   <div class="bottom-nav">
     <button class="nav-item" onclick="goHome()"><span>🏠</span>Home</button>
     <button class="nav-item active"><span>🛒</span>Cart</button>
-    <button class="nav-item" onclick="goTo('profilePage')"><span>📦</span>Orders</button>
+    <button class="nav-item" onclick="goTo('ordersPage')"><span>📦</span>Orders</button>
     <button class="nav-item" onclick="goTo('profilePage')"><span>👤</span>Profile</button>
   </div>
 </div>
@@ -411,6 +411,26 @@
   </div>
 </div>
 
+<!-- ==== ORDERS ==== -->
+<div class="page" id="ordersPage">
+  <div class="navbar">
+    <div class="nav-logo" onclick="goHome()"><div class="nav-logo-icon"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="10" ry="7" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="white"/></svg></div><div class="nav-logo-text">Lensly</div></div>
+    <div class="nav-right"><button class="nav-icon-btn" onclick="goBack()">←</button></div>
+  </div>
+
+  <div style="padding:20px;">
+    <h2 style="font-family:'Space Grotesk',sans-serif;margin-bottom:16px;">📦 My Orders</h2>
+    <div id="ordersPageList"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="goHome()"><span>🏠</span>Home</button>
+    <button class="nav-item" onclick="goTo('cartPage')"><span>🛒</span>Cart</button>
+    <button class="nav-item active"><span>📦</span>Orders</button>
+    <button class="nav-item" onclick="goTo('profilePage')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
 <!-- ════ PROFILE ════ -->
 <div class="page" id="profilePage">
   <div class="navbar">
@@ -469,7 +489,7 @@
   <div class="bottom-nav">
     <button class="nav-item" onclick="goHome()"><span>🏠</span>Home</button>
     <button class="nav-item" onclick="goTo('cartPage')"><span>🛒</span>Cart</button>
-    <button class="nav-item" onclick="goTo('profilePage')"><span>📦</span>Orders</button>
+    <button class="nav-item" onclick="goTo('ordersPage')"><span>📦</span>Orders</button>
     <button class="nav-item active"><span>👤</span>Profile</button>
   </div>
 </div>

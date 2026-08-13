@@ -177,6 +177,7 @@ function goTo(id){
   if(id==='homePage'){renderCollections();renderRec('recScroll',0);}
   if(id==='checkoutPage')renderCheckoutSlogan();
   if(id==='profilePage') renderProfile();
+  if(id==='ordersPage')renderOrdersPage();
   updateBadges();
 }
 function goBack(){
@@ -1309,6 +1310,52 @@ async function renderProfile(){
       </div>`;
     }).join('');
   }
+}
+
+async function renderOrdersPage(){
+  const orders = await loadOrdersFromBackend();
+  const list = document.getElementById('ordersPageList');
+
+  if (!orders.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <p>You haven't ordered anything yet.</p>
+      <button onclick="openCollection('all')" style="margin-top:13px;padding:11px 26px;border-radius:10px;border:none;background:var(--primary);color:white;font-weight:700;font-size:.93rem;cursor:pointer;">Shop Now</button>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = orders.map(o => {
+    const status = o.shipping_status || 'Processing';
+    const amount = o.total_amount ? `₹${o.total_amount}` : '';
+    const date = o.created_at ? new Date(o.created_at).toLocaleDateString() : '';
+    const stepsHtml = buildMiniTrackerHtml(status);
+
+    return `<div style="background:white;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+        <strong>Order #${_e(String(o.id).slice(0,8).toUpperCase())}</strong>
+        <span>${amount}</span>
+      </div>
+      <div style="font-size:.78rem;color:var(--text-light);margin-bottom:12px;">${date}</div>
+      ${stepsHtml}
+    </div>`;
+  }).join('');
+}
+
+function buildMiniTrackerHtml(currentStatus){
+  const steps = ["Order Confirmed", "Processing", "Shipped", "Out for Delivery", "Delivered"];
+  const realSteps = ["Processing", "Shipped", "Out for Delivery", "Delivered"];
+  let currentIndex = realSteps.indexOf(currentStatus);
+  if (currentIndex === -1) currentIndex = 0;
+  const activeStepIndex = currentIndex + 1;
+
+  return `<div style="display:flex;gap:4px;">
+    ${steps.map((label, i) => {
+      const color = i < activeStepIndex ? '#6C5CE7' : (i === activeStepIndex ? '#A29BFE' : '#E0E0E0');
+      return `<div style="flex:1;height:5px;border-radius:3px;background:${color};" title="${label}"></div>`;
+    }).join('')}
+  </div>
+  <div style="font-size:.74rem;color:var(--text-light);margin-top:6px;">Status: ${_e(currentStatus)}</div>`;
 }
 
 function saveProfile(){
