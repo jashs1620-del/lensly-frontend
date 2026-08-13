@@ -153,6 +153,7 @@ async function tryAutoLogin() {
       return false;
     }
     isLoggedIn = true;
+    document.getElementById('userAvatar').textContent = (userProfile.name || 'U').charAt(0).toUpperCase();
     return true;
   } catch (err) {
     console.error('Auto-login check failed:', err);
@@ -227,6 +228,7 @@ async function handleGoogleCredential(response) {
         phone: data.data.user?.phone || ''
       };
       safeStore('profile', userProfile);
+      document.getElementById('userAvatar').textContent = (userProfile.name || 'U').charAt(0).toUpperCase();
 
       showToast('✅ Logged in with Google!');
       await Promise.all([loadWishlist(), loadCartFromBackend()]);
@@ -1201,6 +1203,7 @@ function signOut(){
   wishlist = {};
   userProfile = { name: '', email: '', phone: '' };
   safeStore('profile', userProfile);
+  document.getElementById('userAvatar').textContent = 'U';
   pageHistory = [];
   updateBadges();
   showToast('👋🏻 Signed out');
