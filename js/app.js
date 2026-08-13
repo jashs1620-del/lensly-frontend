@@ -138,6 +138,29 @@ let userProfile=safeRead('profile',{name:'',email:'',phone:''});
 let pendingTryOnProduct=null;
 
 // ═══════════════════════════════════════
+//  AUTO-LOGIN — restore session if a valid token exists
+// ═══════════════════════════════════════
+async function tryAutoLogin() {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) {
+      localStorage.removeItem('token'); // expired/invalid token — clean up
+      return false;
+    }
+    isLoggedIn = true;
+    return true;
+  } catch (err) {
+    console.error('Auto-login check failed:', err);
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════════════
 function goToPage(id){
@@ -152,7 +175,7 @@ function goTo(id){
   if(id==='cartPage')renderCart();
   if(id==='homePage'){renderCollections();renderRec('recScroll',0);}
   if(id==='checkoutPage')renderCheckoutSlogan();
-  if(id==='profilePage')renderProfile();
+  if(id==='profilePage') renderProfile();
   updateBadges();
 }
 function goBack(){
@@ -198,9 +221,15 @@ async function handleGoogleCredential(response) {
     if (res.ok) {
       localStorage.setItem('token', data.data.token);
       isLoggedIn = true;
+      userProfile = {
+        name: data.data.user?.name || '',
+        email: data.data.user?.email || '',
+        phone: data.data.user?.phone || ''
+      };
+      safeStore('profile', userProfile);
+
       showToast('✅ Logged in with Google!');
-      await loadWishlist();
-      await loadCartFromBackend();
+      await Promise.all([loadWishlist(), loadCartFromBackend()]);
       goHome();
     } else {
       showToast('❌ Google login failed: ' + (data.message || 'Unknown error'));
@@ -441,6 +470,7 @@ function pickPower(el,pw){document.querySelectorAll('.power-chip').forEach(c=>c.
 function addFromDetail(){if(!selectedPower){showToast('⚠️ Please select a power first');return;}addToCart(currentProduct,selectedPower);}
 function buyNowClick(){if(!selectedPower){showToast('⚠️ Please select a power first');return;}addToCart(currentProduct,selectedPower);goToCheckout();}
 function quickAdd(id){if(!isLoggedIn){showToast('Please login first');return;}const p=PRODUCTS.find(x=>x.id===id);addToCart(p,'Ask seller');}
+
 
 // ═══════════════════════════════════════
 //  TRY-ON — MediaPipe Face Mesh powered (real eye tracking)
@@ -926,6 +956,22 @@ async function loadCartFromBackend(){
   }
 }
 
+async function loadOrdersFromBackend(){
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/orders`, {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    });
+    const result = await res.json();
+    if (result.success) {
+      return result.data;
+    }
+    return [];
+  } catch (err) {
+    console.error('Failed to load orders:', err);
+    return [];
+  }
+}
+
 async function changeQty(idx,d){
   const item = cart[idx];
   const newQty = item.qty + d;
@@ -989,6 +1035,7 @@ async function resetCart(){
 }
 
 function updateBadges(){const n=cart.reduce((s,i)=>s+i.qty,0);document.querySelectorAll('#cartBadge,#cartBadge2').forEach(b=>b.textContent=n);}
+
 
 
 // ═══════════════════════════════════════
@@ -1145,6 +1192,22 @@ async function verifyPaymentWithBackend(razorpayResponse, orderId){
 }
 
 // ═══════════════════════════════════════
+//  Sign Out
+// ═══════════════════════════════════════
+function signOut(){
+  localStorage.removeItem('token');
+  isLoggedIn = false;
+  cart = [];
+  wishlist = {};
+  userProfile = { name: '', email: '', phone: '' };
+  safeStore('profile', userProfile);
+  pageHistory = [];
+  updateBadges();
+  showToast('👋🏻 Signed out');
+  goToPage('loginPage');
+}
+
+// ═══════════════════════════════════════
 //  REORDER NOTIFICATIONS
 // ═══════════════════════════════════════
 function checkReorderNotifications(){
@@ -1169,39 +1232,41 @@ function dismissReorder(){const b=document.getElementById('reorderBanner');b.sty
 // ═══════════════════════════════════════
 //  PROFILE
 // ═══════════════════════════════════════
-function renderProfile(){
-  const orders=safeRead('orders',[]);
-  document.getElementById('statOrders').textContent=new Set(orders.map(o=>o.orderId)).size;
-  document.getElementById('statCart').textContent=cart.reduce((s,i)=>s+i.qty,0);
-  const saved=PRODUCTS.reduce((s,p)=>s+(p.oldPrice-p.price),0);
-  document.getElementById('statSaved').textContent='₹'+orders.reduce((s,o)=>s+((o.price||0)*(o.qty||1)*0.2),0).toFixed(0);
+async function renderProfile(){
+  const orders = await loadOrdersFromBackend();
 
-  const name=userProfile.name||'Guest User';
-  document.getElementById('profileAvatarLg').textContent=name.charAt(0).toUpperCase();
-  document.getElementById('profileNameLg').textContent=name;
-  document.getElementById('profileMetaLg').textContent=userProfile.email||userProfile.phone||'Member since today';
-  document.getElementById('profName').value=userProfile.name||'';
-  document.getElementById('profEmail').value=userProfile.email||'';
-  document.getElementById('profPhone').value=userProfile.phone||'';
+  document.getElementById('statOrders').textContent = orders.length;
+  document.getElementById('statCart').textContent = cart.reduce((s,i)=>s+i.qty,0);
+  const saved = PRODUCTS.reduce((s,p)=>s+(p.oldPrice-p.price),0);
+  document.getElementById('statSaved').textContent = '₹0'; // no reliable "saved" data from real orders yet
 
-  const list=document.getElementById('profileOrdersList');
-  if(!orders.length){
-    list.innerHTML='<p style="font-size:.82rem;color:var(--text-light);">No orders yet.</p>';
-  }else{
-    const grouped={};
-    orders.forEach(o=>{if(!grouped[o.orderId])grouped[o.orderId]=[];grouped[o.orderId].push(o);});
-    list.innerHTML=Object.entries(grouped).reverse().slice(0,5).map(([oid,items])=>{
-      const total=items.reduce((s,i)=>s+(i.price*i.qty),0);
+  const name = userProfile.name || 'Guest User';
+  document.getElementById('profileAvatarLg').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('profileNameLg').textContent = name;
+  document.getElementById('profileMetaLg').textContent = userProfile.email || userProfile.phone || 'Member since today';
+  document.getElementById('profName').value = userProfile.name || '';
+  document.getElementById('profEmail').value = userProfile.email || '';
+  document.getElementById('profPhone').value = userProfile.phone || '';
+
+  const list = document.getElementById('profileOrdersList');
+  if (!orders.length) {
+    list.innerHTML = '<p style="font-size:.82rem;color:var(--text-light);">No orders yet.</p>';
+  } else {
+    list.innerHTML = orders.slice(0, 5).map(o => {
+      const status = o.shipping_status || o.payment_status || 'Processing';
+      const amount = o.total_amount ? `₹${o.total_amount}` : '';
+      const date = o.created_at ? new Date(o.created_at).toLocaleDateString() : '';
       return `<div class="profile-list-item">
         <div class="profile-list-icon">📦</div>
         <div class="profile-list-text">
-          <div class="profile-list-title">${_e(oid)}</div>
-          <div class="profile-list-sub">${items.length} item${items.length>1?'s':''} • ₹${total}</div>
+          <div class="profile-list-title">Order #${_e(String(o.id).slice(0,8))}</div>
+          <div class="profile-list-sub">${_e(status)} • ${amount} • ${date}</div>
         </div>
       </div>`;
     }).join('');
   }
 }
+
 function saveProfile(){
   const name=document.getElementById('profName').value.trim();
   const email=document.getElementById('profEmail').value.trim();
@@ -1228,4 +1293,15 @@ updateBadges();
 loadAllProducts().then(() => {
     renderOverlayGrid(PRODUCTS);
 });
-runSplash();
+
+tryAutoLogin().then(async (loggedIn) => {
+  if (loggedIn) {
+    await Promise.all([loadWishlist(), loadCartFromBackend()]);
+    goToPage('homePage');
+    renderCollections();
+    renderRec('recScroll', 0);
+    updateBadges();
+  } else {
+    runSplash();
+  }
+});
