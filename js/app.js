@@ -1369,6 +1369,38 @@ function saveProfile(){
   showToast('✅ Profile updated!');
 }
 
+async function requestReturn() {
+  const orders = await loadOrdersFromBackend();
+  if (!orders.length) {
+    showToast('⚠️ You have no orders to return');
+    return;
+  }
+  // Use the most recent order for simplicity — can upgrade to a picker later
+  const latestOrder = orders[0];
+  const reason = prompt("Briefly tell us why you'd like to return this order:");
+  if (reason === null) return; // user cancelled
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/returns`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      body: JSON.stringify({ orderId: latestOrder.id, reason })
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast('✅ Return request submitted! We will email you.');
+    } else {
+      showToast('⚠️ ' + result.message);
+    }
+  } catch (err) {
+    console.error('Return request error:', err);
+    showToast('⚠️ Could not submit return request');
+  }
+}
+
 // ═══════════════════════════════════════
 //  TOAST
 // ═══════════════════════════════════════
