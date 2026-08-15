@@ -1387,7 +1387,7 @@ async function requestReturn() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       },
-      body: JSON.stringify({ orderId: latestOrder.id, reason })
+      body: JSON.stringify({ order_id: latestOrder.id, reason })
     });
     const result = await res.json();
     if (result.success) {
