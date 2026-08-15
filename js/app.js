@@ -1298,8 +1298,8 @@ async function renderProfile(){
     list.innerHTML = '<p style="font-size:.82rem;color:var(--text-light);">No orders yet.</p>';
   } else {
     list.innerHTML = orders.slice(0, 5).map(o => {
-      const status = o.shipping_status || 'Processing';
-      const amount = o.total_amount ? `₹${o.total_amount}` : '';
+      const status = o.status || 'Processing';
+      const amount = o.total ? `₹${o.total}` : '';
       const date = o.created_at ? new Date(o.created_at).toLocaleDateString() : '';
       return `<div class="profile-list-item"> onclick="viewOrderTracking('${o.id}','${status}')">
         <div class="profile-list-icon">📦</div>
@@ -1326,8 +1326,8 @@ async function renderOrdersPage(){
   }
 
   list.innerHTML = orders.map(o => {
-    const status = o.shipping_status || 'Processing';
-    const amount = o.total_amount ? `₹${o.total_amount}` : '';
+    const status = o.status || 'Processing';
+    const amount = o.total ? `₹${o.total}` : '';
     const date = o.created_at ? new Date(o.created_at).toLocaleDateString() : '';
     const stepsHtml = buildMiniTrackerHtml(status);
 
