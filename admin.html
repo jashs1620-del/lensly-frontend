@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lensly — Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg: #F5F8F8;
+    --panel: #FFFFFF;
+    --ink: #10262A;
+    --ink-soft: #52696D;
+    --line: #DCE6E6;
+    --teal: #16545C;
+    --teal-deep: #0C3A40;
+    --cyan: #2FA8A0;
+    --coral: #E8635B;
+    --amber: #D9A441;
+    --ok: #2E9E6B;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 20px 80px; }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:22px; margin-bottom:22px; border-bottom:1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .lensmark{ width:34px; height:34px; position:relative; flex:none; }
+  .lensmark span{ position:absolute; inset:0; border-radius:50%; border:2px solid var(--teal); }
+  .lensmark span:nth-child(2){ inset:7px; border-color:var(--cyan); }
+  .lensmark span:nth-child(3){ inset:14px; border-color:var(--coral); border-style:solid; }
+  .brand h1{ font-family:'Space Grotesk', sans-serif; font-size:20px; margin:0; letter-spacing:-0.01em; }
+  .brand p{ margin:0; font-size:12px; color:var(--ink-soft); }
+
+  .conn{ display:flex; align-items:center; gap:10px; font-size:12px; color:var(--ink-soft); }
+  .dot{ width:8px; height:8px; border-radius:50%; background:#999; }
+  .dot.on{ background:var(--ok); }
+  .dot.off{ background:var(--coral); }
+  button.ghost{
+    background:none; border:1px solid var(--line); color:var(--teal-deep);
+    padding:8px 14px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer;
+    font-family:inherit;
+  }
+  button.ghost:hover{ border-color:var(--teal); }
+
+  #settings{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:20px; margin-bottom:22px; display:none;
+  }
+  #settings.open{ display:block; }
+  #settings h2{ font-family:'Space Grotesk',sans-serif; font-size:14px; margin:0 0 4px; }
+  #settings .hint{ font-size:12px; color:var(--ink-soft); margin:0 0 16px; line-height:1.5; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--teal-deep); margin-bottom:6px; }
+  .field input{
+    width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px;
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; background:#FBFDFD;
+  }
+  .field input:focus{ outline:2px solid var(--cyan); outline-offset:1px; border-color:transparent; }
+  .settings-actions{ display:flex; gap:10px; margin-top:16px; }
+  button.primary{
+    background:var(--teal); color:#fff; border:none; padding:9px 16px;
+    border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  button.primary:hover{ background:var(--teal-deep); }
+  button.primary:disabled{ opacity:.6; cursor:default; }
+
+  .tabs{ display:flex; gap:6px; margin-bottom:18px; }
+  .tab{
+    padding:9px 18px; border-radius:999px; border:1px solid var(--line); background:var(--panel);
+    font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer;
+  }
+  .tab.active{ background:var(--teal); color:#fff; border-color:var(--teal); }
+
+  .toolbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+  .toolbar input[type=text]{
+    flex:1; min-width:180px; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+    font-size:13px; font-family:inherit; background:var(--panel);
+  }
+  .toolbar select{
+    padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:13px;
+    font-family:inherit; background:var(--panel); color:var(--ink);
+  }
+
+  .table-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--ink-soft); font-weight:600; padding:12px 14px; border-bottom:1px solid var(--line);
+    background:#FAFCFC;
+  }
+  tbody td{ padding:14px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr.row{ cursor:pointer; }
+  tbody tr.row:hover{ background:#FAFCFC; }
+  .oid{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); }
+  .cust-name{ font-weight:600; }
+  .cust-email{ font-size:12px; color:var(--ink-soft); }
+  .addr{ font-size:12.5px; color:var(--ink-soft); max-width:230px; }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px;
+    font-size:11.5px; font-weight:600; border:1px solid transparent;
+  }
+  .status-pill .ring{ width:7px; height:7px; border-radius:50%; }
+  .st-processing{ background:#FDF3E3; color:#8A6212; } .st-processing .ring{ background:var(--amber); }
+  .st-shipped{ background:#E6F3F6; color:#1D6B78; } .st-shipped .ring{ background:var(--cyan); }
+  .st-out{ background:#EEEAFB; color:#5B4AA8; } .st-out .ring{ background:#7A63D6; }
+  .st-delivered{ background:#E7F6EE; color:#1E7A4C; } .st-delivered .ring{ background:var(--ok); }
+  .st-pending{ background:#FBEAEA; color:#A8332C; } .st-pending .ring{ background:var(--coral); }
+  .st-requested{ background:#FBEFEA; color:#B05A2C; } .st-requested .ring{ background:#D97D46; }
+  .st-other{ background:#EEF1F1; color:var(--ink-soft); } .st-other .ring{ background:#9AA6A6; }
+
+  .empty, .loading, .errbox{ padding:48px 20px; text-align:center; color:var(--ink-soft); font-size:13.5px; }
+  .errbox{ color:#A8332C; }
+  .errbox code{ background:#FBEAEA; padding:2px 6px; border-radius:5px; font-size:12px; }
+
+  .detail-row td{ background:#FAFCFC; padding:0; }
+  .detail-inner{ padding:18px 22px 22px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:640px){ .detail-inner{ grid-template-columns:1fr; } }
+  .detail-block h4{ margin:0 0 8px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--teal-deep); }
+  .detail-block p{ margin:0 0 4px; font-size:13px; line-height:1.5; }
+  .items-list{ font-size:13px; }
+  .items-list div{ display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--line); }
+  .status-update{ display:flex; gap:8px; align-items:center; margin-top:10px; }
+  .status-update select{ padding:7px 10px; border:1px solid var(--line); border-radius:7px; font-size:12.5px; }
+  .muted{ color:var(--ink-soft); font-size:12px; }
+
+  footer{ margin-top:26px; font-size:11.5px; color:var(--ink-soft); text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="lensmark"><span></span><span></span><span></span></div>
+      <div>
+        <h1>Lensly Admin</h1>
+        <p>Orders & returns, in one place</p>
+      </div>
+    </div>
+    <div class="conn">
+      <span id="connDot" class="dot off"></span>
+      <span id="connLabel">Not connected</span>
+      <button class="ghost" id="settingsBtn">Settings</button>
+    </div>
+  </header>
+
+  <div id="settings">
+    <h2>Connection settings</h2>
+    <p class="hint">Point this at your live backend. Values are saved in this browser only. Defaults below now match your real routes — only change them if your backend paths differ.</p>
+    <div class="grid">
+      <div class="field">
+        <label>API base URL</label>
+        <input type="text" id="cfgBase" placeholder="https://lensly-backend.onrender.com" />
+      </div>
+      <div class="field">
+        <label>Admin JWT token</label>
+        <input type="text" id="cfgToken" placeholder="Paste token from Local Storage after admin login" />
+      </div>
+      <div class="field">
+        <label>Orders (admin, list) endpoint</label>
+        <input type="text" id="cfgOrders" placeholder="/api/orders/admin/all" />
+      </div>
+      <div class="field">
+        <label>Order detail (admin, single) endpoint</label>
+        <input type="text" id="cfgOrderDetail" placeholder="/api/orders/admin/:id" />
+      </div>
+      <div class="field">
+        <label>Returns (admin) endpoint</label>
+        <input type="text" id="cfgReturns" placeholder="/api/returns/admin/all" />
+      </div>
+      <div class="field">
+        <label>Order status update endpoint</label>
+        <input type="text" id="cfgStatusUpdate" placeholder="/api/orders/:id/status" />
+      </div>
+      <div class="field">
+        <label>Health check endpoint</label>
+        <input type="text" id="cfgHealth" placeholder="/api/health" />
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button class="primary" id="saveSettings">Save & connect</button>
+      <button class="ghost" id="testHealth">Test connection</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="orders">Orders</div>
+    <div class="tab" data-tab="returns">Returns</div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search by customer, email, or order ID…" />
+    <select id="statusFilter">
+      <option value="">All statuses</option>
+      <option value="Processing">Processing</option>
+      <option value="Shipped">Shipped</option>
+      <option value="Out for Delivery">Out for Delivery</option>
+      <option value="Delivered">Delivered</option>
+      <option value="Requested">Requested</option>
+      <option value="Pending">Pending</option>
+    </select>
+    <button class="ghost" id="refreshBtn">Refresh</button>
+  </div>
+
+  <div class="table-wrap">
+    <div id="content"><div class="loading">Open Settings and connect to your backend to load orders.</div></div>
+  </div>
+
+  <footer>Lensly internal tool — not for customer access. Admin token is stored only in this browser.</footer>
+</div>
+
+<script>
+(function(){
+  const state = {
+    tab: 'orders',
+    orders: [],
+    returns: [],
+    openRow: null,
+    detailCache: {}, // orderId -> { items, loading, error }
+    cfg: {
+      base: '', token: '',
+      orders: '/api/orders/admin/all',
+      orderDetail: '/api/orders/admin/:id',
+      returns: '/api/returns/admin/all',
+      statusUpdate: '/api/orders/:id/status', // matches real route.js: router.patch("/:id/status", auth, isAdmin, ...)
+      health: '/api/health'
+    }
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  async function storeGet(key){
+    try{
+      if(window.storage){
+        const r = await window.storage.get(key, false);
+        return r ? JSON.parse(r.value) : null;
+      }
+    }catch(e){ return null; }
+    return null;
+  }
+  async function storeSet(key, value){
+    try{ if(window.storage){ await window.storage.set(key, JSON.stringify(value), false); } }
+    catch(e){ /* in-memory only this session */ }
+  }
+
+  function fillSettingsForm(){
+    $('cfgBase').value = state.cfg.base;
+    $('cfgToken').value = state.cfg.token;
+    $('cfgOrders').value = state.cfg.orders;
+    $('cfgOrderDetail').value = state.cfg.orderDetail;
+    $('cfgReturns').value = state.cfg.returns;
+    $('cfgStatusUpdate').value = state.cfg.statusUpdate;
+    $('cfgHealth').value = state.cfg.health;
+  }
+
+  function setConn(ok, label){
+    $('connDot').className = 'dot ' + (ok ? 'on' : 'off');
+    $('connLabel').textContent = label;
+  }
+
+  async function apiFetch(path){
+    const url = state.cfg.base.replace(/\/$/,'') + path;
+    const res = await fetch(url, {
+      headers: state.cfg.token ? { 'Authorization': 'Bearer ' + state.cfg.token } : {}
+    });
+    if(!res.ok){
+      const text = await res.text().catch(()=> '');
+      throw new Error('HTTP ' + res.status + (text ? ' — ' + text.slice(0,140) : ''));
+    }
+    return res.json();
+  }
+
+  async function testHealth(){
+    if(!state.cfg.base){ setConn(false, 'Set an API base URL first'); return; }
+    setConn(false, 'Checking…');
+    try{ await apiFetch(state.cfg.health); setConn(true, 'Connected'); }
+    catch(e){ setConn(false, 'Unreachable — ' + e.message); }
+  }
+
+  // Your success() wrapper shape is unconfirmed. This unwraps whichever of these
+  // shapes it turns out to be, so the dashboard works either way:
+  //   { success, message, data: { metadata, data: [...] } }   <- most likely, given your controller
+  //   { success, message, data: [...] }
+  //   { data: [...] }  or  bare [...]
+  function unwrapList(raw){
+    if(Array.isArray(raw)) return raw;
+    if(raw && Array.isArray(raw.data)) return raw.data;
+    if(raw && raw.data && Array.isArray(raw.data.data)) return raw.data.data;
+    if(raw && Array.isArray(raw.orders)) return raw.orders;
+    if(raw && Array.isArray(raw.returns)) return raw.returns;
+    return [];
+  }
+
+  function assembleAddress(o){
+    // Built from your actual getAllOrdersAdmin JOIN: shipping_name, shipping_phone,
+    // shipping_address, shipping_city, shipping_state, shipping_country, shipping_pincode
+    const parts = [o.shipping_address, o.shipping_city, o.shipping_state, o.shipping_country, o.shipping_pincode]
+      .filter(Boolean);
+    if(parts.length) return parts.join(', ');
+    // fallback for any other shape
+    return o.address || o.delivery_address ||
+      [o.address_line1, o.address_line2, o.city, o.state, o.pincode].filter(Boolean).join(', ') || '—';
+  }
+
+  function normalizeOrders(raw){
+    const list = unwrapList(raw);
+    return list.map(o => ({
+      id: o.id,
+      customerName: o.customer_name || '—',
+      customerEmail: o.customer_email || '—',
+      shippingName: o.shipping_name || null,
+      shippingPhone: o.shipping_phone || null,
+      address: assembleAddress(o),
+      status: o.status || 'Pending',
+      total: o.total ?? o.total_amount ?? null,
+      trackingNumber: o.tracking_number || null,
+      createdAt: o.created_at || o.createdAt || null,
+      raw: o
+    }));
+  }
+
+  function normalizeReturns(raw){
+    const list = unwrapList(raw);
+    // Matches confirmed getAllReturnsAdmin query: returns.* + JOIN users (customer_name,
+    // customer_email) + JOIN orders (order_total, order_date)
+    return list.map(r => ({
+      id: r.id,
+      orderId: r.order_id,
+      userId: r.user_id,
+      customerName: r.customer_name || '—',
+      customerEmail: r.customer_email || '—',
+      orderTotal: r.order_total ?? null,
+      orderDate: r.order_date || null,
+      reason: r.reason || '—',
+      status: r.status || 'Pending',
+      createdAt: r.created_at || r.createdAt || null,
+      raw: r
+    }));
+  }
+
+  function statusClass(s){
+    const k = (s||'').toLowerCase();
+    if(k.includes('process')) return 'st-processing';
+    if(k.includes('shipped')) return 'st-shipped';
+    if(k.includes('out for')) return 'st-out';
+    if(k.includes('deliver')) return 'st-delivered';
+    if(k.includes('requested')) return 'st-requested';
+    if(k.includes('pending')) return 'st-pending';
+    return 'st-other';
+  }
+  function renderStatusPill(s){
+    return `<span class="status-pill ${statusClass(s)}"><span class="ring"></span>${s || 'Unknown'}</span>`;
+  }
+
+  async function load(){
+    const c = $('content');
+    if(!state.cfg.base){
+      c.innerHTML = '<div class="loading">Open Settings and connect to your backend to load orders.</div>';
+      return;
+    }
+    c.innerHTML = '<div class="loading">Loading ' + state.tab + '…</div>';
+    try{
+      if(state.tab === 'orders'){
+        const raw = await apiFetch(state.cfg.orders);
+        state.orders = normalizeOrders(raw);
+      } else {
+        const raw = await apiFetch(state.cfg.returns);
+        state.returns = normalizeReturns(raw);
+      }
+      setConn(true, 'Connected');
+      render();
+    }catch(e){
+      setConn(false, 'Error');
+      c.innerHTML = '<div class="errbox">Couldn\'t load data — <code>' + e.message.replace(/</g,'&lt;') +
+        '</code><br/><br/>Check the endpoint path in Settings matches your backend route, and that your admin token is valid and unexpired.</div>';
+    }
+  }
+
+  async function loadOrderDetail(id){
+    state.detailCache[id] = { loading: true };
+    render();
+    try{
+      const path = state.cfg.orderDetail.replace(':id', id);
+      const raw = await apiFetch(path);
+      // getOrderByIdAdmin returns { order, items } — unwrap defensively
+      const body = raw && raw.data ? raw.data : raw;
+      const items = (body && body.items) || [];
+      state.detailCache[id] = { loading:false, items };
+    }catch(e){
+      state.detailCache[id] = { loading:false, error: e.message };
+    }
+    render();
+  }
+
+  function filtered(list, isReturn){
+    const q = ($('search').value || '').toLowerCase().trim();
+    const st = $('statusFilter').value;
+    return list.filter(x => {
+      const matchesQ = !q || [x.customerName, x.customerEmail, x.id, isReturn ? x.orderId : x.address]
+        .join(' ').toLowerCase().includes(q);
+      const matchesSt = !st || (x.status || '').toLowerCase() === st.toLowerCase();
+      return matchesQ && matchesSt;
+    });
+  }
+
+  function render(){
+    const c = $('content');
+    if(state.tab === 'orders'){
+      const rows = filtered(state.orders, false);
+      if(!rows.length){ c.innerHTML = '<div class="empty">No orders match. Try clearing filters, or check Settings if this is unexpected.</div>'; return; }
+      c.innerHTML = `<table>
+        <thead><tr><th>Order</th><th>Customer</th><th>Deliver to</th><th>Status</th><th>Total</th><th>Placed</th></tr></thead>
+        <tbody>${rows.map(o => orderRowHTML(o)).join('')}</tbody>
+      </table>`;
+    } else {
+      const rows = filtered(state.returns, true);
+      if(!rows.length){ c.innerHTML = '<div class="empty">No return requests match.</div>'; return; }
+      c.innerHTML = `<table>
+        <thead><tr><th>Return</th><th>Order</th><th>Customer</th><th>Order total</th><th>Reason</th><th>Status</th><th>Requested</th></tr></thead>
+        <tbody>${rows.map(r => returnRowHTML(r)).join('')}</tbody>
+      </table>`;
+    }
+    attachRowHandlers();
+  }
+
+  function orderRowHTML(o){
+    const open = state.openRow === ('o'+o.id);
+    const detail = state.detailCache[o.id];
+    let itemsHTML;
+    if(!detail){ itemsHTML = '<p class="muted">Loading items…</p>'; }
+    else if(detail.loading){ itemsHTML = '<p class="muted">Loading items…</p>'; }
+    else if(detail.error){ itemsHTML = `<p class="muted">Couldn't load items — ${escapeHtml(detail.error)}</p>`; }
+    else if(!detail.items || !detail.items.length){ itemsHTML = '<p class="muted">No line items returned.</p>'; }
+    else{
+      itemsHTML = `<div class="items-list">${detail.items.map(it =>
+        `<div><span>${escapeHtml(it.product_name || 'Item')} × ${it.quantity || 1}</span><span>₹${it.price ?? ''}</span></div>`
+      ).join('')}</div>`;
+    }
+    return `<tr class="row" data-kind="order" data-id="${o.id}">
+        <td class="oid">#${o.id}</td>
+        <td><div class="cust-name">${escapeHtml(o.customerName)}</div><div class="cust-email">${escapeHtml(o.customerEmail)}</div></td>
+        <td class="addr">${escapeHtml(o.address)}</td>
+        <td>${renderStatusPill(o.status)}</td>
+        <td>${o.total != null ? '₹' + o.total : '—'}</td>
+        <td>${formatDate(o.createdAt)}</td>
+      </tr>
+      ${open ? `<tr class="detail-row"><td colspan="6"><div class="detail-inner">
+        <div class="detail-block">
+          <h4>Delivery address</h4>
+          <p>${escapeHtml(o.shippingName || o.customerName)}</p>
+          <p>${escapeHtml(o.address)}</p>
+          ${o.shippingPhone ? `<p>${escapeHtml(o.shippingPhone)}</p>` : ''}
+          <h4 style="margin-top:14px;">Account contact</h4>
+          <p>${escapeHtml(o.customerName)} · ${escapeHtml(o.customerEmail)}</p>
+          ${o.trackingNumber ? `<h4 style="margin-top:14px;">Tracking</h4><p>${escapeHtml(o.trackingNumber)}</p>` : ''}
+        </div>
+        <div class="detail-block">
+          <h4>Items</h4>
+          ${itemsHTML}
+          <div class="status-update">
+            <select data-id="${o.id}" class="status-select">
+              ${['Processing','Shipped','Out for Delivery','Delivered'].map(s => `<option ${s===o.status?'selected':''}>${s}</option>`).join('')}
+            </select>
+            <button class="primary status-save" data-id="${o.id}">Update status</button>
+          </div>
+        </div>
+      </div></td></tr>` : ''}`;
+  }
+
+  function returnRowHTML(r){
+    return `<tr class="row" data-kind="return" data-id="${r.id}">
+      <td class="oid">#${r.id}</td>
+      <td class="oid">#${r.orderId}</td>
+      <td><div class="cust-name">${escapeHtml(r.customerName)}</div><div class="cust-email">${escapeHtml(r.customerEmail)}</div></td>
+      <td>${r.orderTotal != null ? '₹' + r.orderTotal : '—'}</td>
+      <td>${escapeHtml(r.reason)}</td>
+      <td>${renderStatusPill(r.status)}</td>
+      <td>${formatDate(r.createdAt)}</td>
+    </tr>`;
+  }
+
+  function attachRowHandlers(){
+    document.querySelectorAll('tr.row[data-kind="order"]').forEach(tr => {
+      tr.addEventListener('click', (e) => {
+        if(e.target.closest('select') || e.target.closest('button')) return;
+        const id = tr.getAttribute('data-id');
+        const key = 'o'+id;
+        if(state.openRow === key){
+          state.openRow = null;
+          render();
+        } else {
+          state.openRow = key;
+          if(!state.detailCache[id]) loadOrderDetail(id);
+          else render();
+        }
+      });
+    });
+    document.querySelectorAll('.status-save').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const sel = document.querySelector('.status-select[data-id="'+id+'"]');
+        const newStatus = sel.value;
+        const path = state.cfg.statusUpdate.replace(':id', id);
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+        try{
+          const url = state.cfg.base.replace(/\/$/,'') + path;
+          const res = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': state.cfg.token ? 'Bearer ' + state.cfg.token : ''
+            },
+            body: JSON.stringify({ status: newStatus })
+          });
+          if(!res.ok){
+            const text = await res.text().catch(()=> '');
+            throw new Error('HTTP ' + res.status + (text ? ' — ' + text.slice(0,140) : ''));
+          }
+          const ord = state.orders.find(o => String(o.id) === String(id));
+          if(ord) ord.status = newStatus;
+          btn.disabled = false;
+          btn.textContent = 'Update status';
+          render();
+        }catch(e){
+          btn.disabled = false;
+          btn.textContent = 'Failed — retry';
+          alert('Could not update status: ' + e.message);
+        }
+      });
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function formatDate(d){
+    if(!d) return '—';
+    const dt = new Date(d);
+    if(isNaN(dt)) return '—';
+    return dt.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+  }
+
+  $('settingsBtn').addEventListener('click', () => $('settings').classList.toggle('open'));
+  $('saveSettings').addEventListener('click', async () => {
+    state.cfg = {
+      base: $('cfgBase').value.trim(),
+      token: $('cfgToken').value.trim(),
+      orders: $('cfgOrders').value.trim() || '/api/orders/admin/all',
+      orderDetail: $('cfgOrderDetail').value.trim() || '/api/orders/admin/:id',
+      returns: $('cfgReturns').value.trim() || '/api/returns/admin/all',
+      statusUpdate: $('cfgStatusUpdate').value.trim() || '/api/orders/:id/status',
+      health: $('cfgHealth').value.trim() || '/api/health'
+    };
+    await storeSet('lensly-admin-cfg', state.cfg);
+    $('settings').classList.remove('open');
+    state.detailCache = {};
+    await testHealth();
+    load();
+  });
+  $('testHealth').addEventListener('click', () => {
+    state.cfg.base = $('cfgBase').value.trim() || state.cfg.base;
+    state.cfg.health = $('cfgHealth').value.trim() || state.cfg.health;
+    testHealth();
+  });
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      state.tab = t.getAttribute('data-tab');
+      state.openRow = null;
+      load();
+    });
+  });
+  $('refreshBtn').addEventListener('click', load);
+  $('search').addEventListener('input', render);
+  $('statusFilter').addEventListener('change', render);
+
+  (async function init(){
+    const saved = await storeGet('lensly-admin-cfg');
+    if(saved){ state.cfg = Object.assign(state.cfg, saved); }
+    fillSettingsForm();
+    if(state.cfg.base){ testHealth(); load(); }
+    else{ $('settings').classList.add('open'); }
+  })();
+})();
+</script>
+</body>
+</html>
