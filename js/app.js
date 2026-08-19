@@ -208,6 +208,8 @@ window.addEventListener('load', () => {
     document.getElementById('hiddenGoogleBtn'),
     { type: 'standard', width: 300 }
   );
+
+  applyPrivacyGateState();
 });
 
 async function handleGoogleCredential(response) {
@@ -241,6 +243,20 @@ async function handleGoogleCredential(response) {
     console.error('Google login error:', err);
     showToast('❌ Network error during Google login');
   }
+}
+
+function hasAcceptedPrivacy(){
+  return safeRead('privacy_accepted', false) === true;
+}
+
+function goToPrivacyGate(){
+  window.location.href = 'privacy.html?next=login';
+}
+
+function applyPrivacyGateState(){
+  const overlay = document.getElementById('privacyGateOverlay');
+  if(!overlay) return;
+  overlay.style.display = hasAcceptedPrivacy() ? 'none' : 'block';
 }
 
 // ═══════════════════════════════════════
@@ -1417,6 +1433,9 @@ loadAllProducts().then(() => {
     renderOverlayGrid(PRODUCTS);
 });
 
+const _urlParams = new URLSearchParams(window.location.search);
+const _skipSplashForPrivacy = _urlParams.get('fromPrivacy') === '1';
+
 tryAutoLogin().then(async (loggedIn) => {
   if (loggedIn) {
     await Promise.all([loadWishlist(), loadCartFromBackend()]);
@@ -1425,6 +1444,10 @@ tryAutoLogin().then(async (loggedIn) => {
     renderRec('recScroll', 0);
     updateBadges();
   } else {
-    runSplash();
+    if (_skipSplashForPrivacy) {
+      goToPage('loginPage');
+    } else {
+      runSplash();
+    }
   }
 });
