@@ -285,15 +285,46 @@
   <button class="detail-back" onclick="history.back()">← Back</button>
   <div class="detail-img-wrap"><img id="detailImg" src="#" alt=""></div>
   <div class="detail-body">
+    <div id="detailRatingRow" style="margin-bottom:6px;"></div>
     <div class="detail-brand" id="detailBrand"></div>
     <div class="detail-name" id="detailName"></div>
-    <div class="detail-price" id="detailPrice"></div>
-    <div class="detail-stars" id="detailStars"></div>
-    <div id="detailBadges"></div>
+    <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0;">
+      <div class="detail-price" id="detailPrice"></div>
+      <div id="detailOldPrice" style="text-decoration:line-through;color:#aaa;font-size:.9rem;"></div>
+      <div id="detailDiscount" style="color:var(--success,#2E7D32);font-weight:700;font-size:.85rem;"></div>
+    </div>
+    <div id="detailPerBox" style="font-size:.82rem;color:var(--text-light);margin-bottom:8px;"></div>
+    <div style="display:inline-flex;align-items:center;gap:6px;background:#F3EFFF;color:#6C5CE7;padding:6px 12px;border-radius:8px;font-size:.8rem;font-weight:600;margin-bottom:14px;">⚡ Delivered in 3–5 days</div>
+
     <div class="detail-section-title">About this lens</div>
     <div class="detail-desc" id="detailDesc"></div>
-    <div class="detail-section-title">Select Power (SPH) <span style="font-size:.77rem;font-weight:400;color:var(--muted);">— required</span></div>
-    <div class="power-grid" id="powerGrid"></div>
+
+    <div class="detail-section-title">Select Power</div>
+    <div style="background:#F8F7FF;border-radius:14px;padding:16px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px;">Right Eye (OD)</label>
+          <select id="powerRight" style="width:100%;padding:9px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px;"></select>
+          <label style="font-size:.76rem;color:var(--text-light);display:block;margin-bottom:4px;">No. of boxes</label>
+          <select id="boxesRight" style="width:100%;padding:9px;border-radius:8px;border:1px solid #ddd;">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px;">Left Eye (OS)</label>
+          <select id="powerLeft" style="width:100%;padding:9px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px;"></select>
+          <label style="font-size:.76rem;color:var(--text-light);display:block;margin-bottom:4px;">No. of boxes</label>
+          <select id="boxesLeft" style="width:100%;padding:9px;border-radius:8px;border:1px solid #ddd;">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          </select>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.82rem;">
+        <input type="checkbox" id="submitPowerLater" onchange="togglePowerLater(this)">
+        I'll submit my power later
+      </label>
+    </div>
+
     <button class="tryon-btn" onclick="requestTryOn()">👁️ Virtual Try-On – See how it looks on you</button>
     <div class="return-policy-box">
       <h4>↩️ Easy Returns</h4>
@@ -301,7 +332,7 @@
     </div>
     <div class="detail-section-title">💡 People Also Bought</div>
     <div class="rec-scroll" id="detailRec" style="padding:0;"></div>
-  </div>
+</div>
   <div class="detail-buy-bar">
     <button class="add-cart-bar-btn" onclick="addFromDetail()">+ Add to Cart</button>
     <button class="buy-now-btn" onclick="buyNowClick()">Buy Now 🛍️</button>

@@ -449,14 +449,10 @@ function renderCart(){
 // ═══════════════════════════════════════
 async function openProduct(id){
   if(!isLoggedIn){showToast('Please login first');return;}
-
   try {
     const response = await fetch(`${API_BASE_URL}/api/products/${id}`);
     const result = await response.json();
-    if (!result.success) {
-      showToast('Could not load product details.');
-      return;
-    }
+    if (!result.success) { showToast('Could not load product details.'); return; }
 
     currentProduct = result.data;
     closeProdOverlay();
@@ -467,15 +463,34 @@ async function openProduct(id){
     document.getElementById('detailPrice').innerHTML = `₹${currentProduct.price}`;
 
     const descEl = document.getElementById('detailDesc');
-    if (descEl) descEl.textContent = currentProduct.description || '';
+    if (descEl) descEl.textContent = currentProduct.description || 'No description available.';
 
-    // No per-product power list stored in the DB yet — fall back to a
-    // standard SPH range so power selection still works.
-    const powers = (currentProduct.powers && currentProduct.powers.length)
-      ? currentProduct.powers
-      : ['-1.00','-1.50','-2.00','-2.50','-3.00','-3.50','-4.00','-4.50','-5.00','-5.50','-6.00'];
-    renderPowers(powers);
+    const ratingRow = document.getElementById('detailRatingRow');
+    const rating = parseFloat(currentProduct.rating);
+    if (ratingRow) {
+      ratingRow.innerHTML = (!isNaN(rating) && rating > 0)
+        ? `${stars(rating)}<span class="star-count">${rating} (${currentProduct.reviews||0})</span>`
+        : '';
+    }
 
+    const oldPriceEl = document.getElementById('detailOldPrice');
+    const discountEl = document.getElementById('detailDiscount');
+    if (oldPriceEl && discountEl) {
+      if (currentProduct.old_price && parseFloat(currentProduct.old_price) > currentProduct.price) {
+        const op = parseFloat(currentProduct.old_price);
+        const pct = Math.round((1 - currentProduct.price / op) * 100);
+        oldPriceEl.textContent = `₹${op}`;
+        discountEl.textContent = `${pct}% OFF`;
+      } else {
+        oldPriceEl.textContent = '';
+        discountEl.textContent = '';
+      }
+    }
+
+    const perBoxEl = document.getElementById('detailPerBox');
+    if (perBoxEl) perBoxEl.textContent = `${currentProduct.lens_type || ''} • ${currentProduct.power_type || ''}`;
+
+    renderPowerDropdowns(currentProduct);
     renderRec('detailRec', id);
     goTo('detailPage');
   } catch (err) {
@@ -484,23 +499,66 @@ async function openProduct(id){
   }
 }
 
-function renderPowers(powers){
-    const grid = document.getElementById('powerGrid');
-    grid.innerHTML = '';
-    powers.forEach(pw => {
-        const chip = document.createElement('div');
-        chip.className = 'power-chip';
-        chip.textContent = pw;
-        chip.onclick = () => pickPower(chip, pw);
-        grid.appendChild(chip);
-    });
+function generateStandardPowers(){
+  const opts = ['Plano (0.00)'];
+  for(let v=0.25; v<=6.00; v+=0.25) opts.push('+'+v.toFixed(2));
+  for(let v=0.25; v<=12.00; v+=0.25) opts.push('-'+v.toFixed(2));
+  return opts;
 }
 
-function pickPower(el,pw){document.querySelectorAll('.power-chip').forEach(c=>c.classList.remove('selected'));el.classList.add('selected');selectedPower=pw;}
-function addFromDetail(){if(!selectedPower){showToast('⚠️ Please select a power first');return;}addToCart(currentProduct,selectedPower);}
-function buyNowClick(){if(!selectedPower){showToast('⚠️ Please select a power first');return;}addToCart(currentProduct,selectedPower);goToCheckout();}
-function quickAdd(id){if(!isLoggedIn){showToast('Please login first');return;}const p=PRODUCTS.find(x=>x.id===id);addToCart(p,'Ask seller');}
+function renderPowerDropdowns(product){
+  const list = (product.powers && product.powers.length) ? product.powers : generateStandardPowers();
+  const fill = (selId) => {
+    const sel = document.getElementById(selId);
+    if(!sel) return;
+    sel.innerHTML = '<option value="">Select</option>' + list.map(p=>`<option value="${_e(p)}">${_e(p)}</option>`).join('');
+  };
+  fill('powerRight');
+  fill('powerLeft');
+  const laterBox = document.getElementById('submitPowerLater');
+  if(laterBox){ laterBox.checked = false; togglePowerLater(laterBox); }
+}
 
+function togglePowerLater(checkbox){
+  const disable = checkbox.checked;
+  ['powerRight','powerLeft','boxesRight','boxesLeft'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.disabled = disable;
+  });
+}
+
+function collectPowerSelection(){
+  const laterBox = document.getElementById('submitPowerLater');
+  const later = laterBox && laterBox.checked;
+  if(later){
+    return { power: 'Power to be submitted later', qty: 1 };
+  }
+  const pr = document.getElementById('powerRight').value;
+  const pl = document.getElementById('powerLeft').value;
+  const br = parseInt(document.getElementById('boxesRight').value) || 1;
+  const bl = parseInt(document.getElementById('boxesLeft').value) || 1;
+  if(!pr || !pl){
+    showToast('⚠️ Please select a power for both eyes, or choose "submit later"');
+    return null;
+  }
+  return { power: `R: ${pr} (${br} box${br>1?'es':''}) / L: ${pl} (${bl} box${bl>1?'es':''})`, qty: br + bl };
+}
+
+function addFromDetail(){
+  const sel = collectPowerSelection();
+  if(!sel) return;
+  addToCart(currentProduct, sel.power, sel.qty);
+}
+function buyNowClick(){
+  const sel = collectPowerSelection();
+  if(!sel) return;
+  addToCart(currentProduct, sel.power, sel.qty).then(()=>goToCheckout());
+}
+function quickAdd(id){
+  if(!isLoggedIn){showToast('Please login first');return;}
+  const p=PRODUCTS.find(x=>x.id===id);
+  addToCart(p,'Ask seller',1);
+}
 
 // ═══════════════════════════════════════
 //  TRY-ON — MediaPipe Face Mesh powered (real eye tracking)
@@ -939,7 +997,7 @@ function updateAllHeartIcons(){
 // ═══════════════════════════════════════
 //  CART LOGIC
 // ═══════════════════════════════════════
-async function addToCart(product,power){
+async function addToCart(product,power,quantity){
   if(!isLoggedIn){showToast('Please login first');return;}
   try {
     const res = await fetch(`${API_BASE_URL}/api/cart`, {
@@ -948,7 +1006,7 @@ async function addToCart(product,power){
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       },
-      body: JSON.stringify({ productId: product.id, quantity: 1, power })
+      body: JSON.stringify({ productId: product.id, quantity: quantity || 1, power })
     });
     const result = await res.json();
     if (result.success) {
