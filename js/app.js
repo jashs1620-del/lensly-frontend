@@ -450,22 +450,36 @@ function renderCart(){
 async function openProduct(id){
   if(!isLoggedIn){showToast('Please login first');return;}
 
-  const response = await fetch(`${API_BASE_URL}/api/products/${id}`);
-  const result = await response.json();
-  if (result.success) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/products/${id}`);
+    const result = await response.json();
+    if (!result.success) {
+      showToast('Could not load product details.');
+      return;
+    }
+
     currentProduct = result.data;
-    console.log("Single product detail:", currentProduct);
     closeProdOverlay();
 
-    document.getElementById('detailImg').src = currentProduct.img_url || currentProduct.image;
-    document.getElementById('detailBrand').textContent=currentProduct.brand;
-    document.getElementById('detailName').textContent=currentProduct.name;
-    document.getElementById('detailPrice').innerHTML=`₹${currentProduct.price}`;
-    renderPowers(currentProduct.powers);
+    document.getElementById('detailImg').src = currentProduct.image_url || currentProduct.img || '';
+    document.getElementById('detailBrand').textContent = currentProduct.brand || '';
+    document.getElementById('detailName').textContent = currentProduct.name || '';
+    document.getElementById('detailPrice').innerHTML = `₹${currentProduct.price}`;
+
+    const descEl = document.getElementById('detailDesc');
+    if (descEl) descEl.textContent = currentProduct.description || '';
+
+    // No per-product power list stored in the DB yet — fall back to a
+    // standard SPH range so power selection still works.
+    const powers = (currentProduct.powers && currentProduct.powers.length)
+      ? currentProduct.powers
+      : ['-1.00','-1.50','-2.00','-2.50','-3.00','-3.50','-4.00','-4.50','-5.00','-5.50','-6.00'];
+    renderPowers(powers);
 
     renderRec('detailRec', id);
     goTo('detailPage');
-  } else {
+  } catch (err) {
+    console.error('openProduct error:', err);
     showToast('Could not load product details.');
   }
 }
@@ -939,7 +953,7 @@ async function addToCart(product,power){
     const result = await res.json();
     if (result.success) {
       await loadCartFromBackend();
-      showToast('✅ Added to cart!');
+      showToastWithAction('✅ Added to cart!', 'view cart', () => goTo('cartPage'));
     } else {
       showToast('⚠️ ' + result.message);
     }
@@ -1418,10 +1432,24 @@ async function requestReturn() {
 //  TOAST
 // ═══════════════════════════════════════
 function showToast(msg){
-  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  const t=document.getElementById('toast');
+  t.innerHTML='';
+  t.textContent=msg;
+  t.classList.add('show');
   clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2800);
 }
 
+function showToastWithAction(msg, actionLabel, actionFn){
+  const t=document.getElementById('toast');
+  clearTimeout(window._tt);
+  t.innerHTML = `<span>${_e(msg)}</span> <button id="toastActionBtn" style="margin-left:10px;background:white;color:#6C5CE7;border:none;border-radius:6px;padding:4px 10px;font-weight:700;font-size:.78rem;cursor:pointer;">${_e(actionLabel)}</button>`;
+  t.classList.add('show');
+  document.getElementById('toastActionBtn').onclick = () => {
+    t.classList.remove('show');
+    actionFn();
+  };
+  window._tt=setTimeout(()=>t.classList.remove('show'),4000);
+}
 // ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
