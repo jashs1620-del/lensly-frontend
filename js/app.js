@@ -153,6 +153,10 @@ async function tryAutoLogin() {
 // ═══════════════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════════════
+function pushNavState(id){
+  history.pushState({page:id}, '', location.href);
+}
+
 function goToPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg=document.getElementById(id);if(pg)pg.classList.add('active');
@@ -160,7 +164,11 @@ function goToPage(id){
 }
 function goTo(id){
   if(!isLoggedIn&&id!=='loginPage'){showToast('Please login first');return;}
-  const cur=document.querySelector('.page.active');if(cur)pageHistory.push(cur.id);
+  const cur=document.querySelector('.page.active');
+  if(cur){
+    pageHistory.push(cur.id);
+    pushNavState(id);
+  }
   goToPage(id);
   if(id==='cartPage')renderCart();
   if(id==='homePage'){renderCollections();renderRec('recScroll',0);}
@@ -178,7 +186,7 @@ function goBack(){
   }else goHome();
 }
 function goHome(){
-  if(!isLoggedIn)return;pageHistory=[];goToPage('homePage');
+  if(!isLoggedIn)return;pageHistory=[];pushNative('homePage');goToPage('homePage');
   renderCollections();renderRec('recScroll',0);updateBadges();
 }
 
@@ -1418,6 +1426,11 @@ function showToast(msg){
 //  INIT
 // ═══════════════════════════════════════
 updateBadges();
+
+window.addEventListener('popstate', function(){
+  goBack();
+});
+
 loadAllProducts().then(() => {
     renderOverlayGrid(PRODUCTS);
 });
