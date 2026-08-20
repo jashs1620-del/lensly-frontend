@@ -14,17 +14,6 @@ const API_BASE_URL = "https://lensly-backend.onrender.com";
     w.appendChild(s);
   }
 })();
-const IMAGES = {
-  soflens59: "assets/images/soflens59.png",
-  soflens_astig: "assets/images/soflens_astig.png",
-  purevision2: "assets/images/purevision2.png",
-  purevision2_astig: "assets/images/purevision2_astig.png",
-  aspire_pro: "assets/images/aspire_pro.png",
-  aspire_air: "assets/images/aspire_air.png",
-  biomedics_now: "assets/images/biomedics_now.png",
-  proclear: "assets/images/proclear.png"
-};
-
 
 // ═══════════════════════════════════════
 //  PRODUCTS
@@ -33,7 +22,7 @@ let PRODUCTS = [];
 
 async function loadAllProducts() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/products`);
+        const response = await fetch(`${API_BASE_URL}/api/products?limit=100`);
         const result = await response.json();
         if (result.success) {
           console.log('raw result from /api/products:', result);
@@ -196,6 +185,20 @@ function goHome(){
 // ═══════════════════════════════════════
 //  LOGIN
 // ═══════════════════════════════════════
+function hasAcceptedPrivacy(){
+  return safeRead('privacy_accepted', false) === true;
+}
+
+function goToPrivacyGate(){
+  window.location.href = 'privacy.html?next=login';
+}
+
+function applyPrivacyGateState(){
+  const overlay = document.getElementById('privacyGateOverlay');
+  if(!overlay) return;
+  overlay.style.display = hasAcceptedPrivacy() ? 'none' : 'block';
+}
+
 const GOOGLE_CLIENT_ID = "605806233246-eclmmrpimkimjvbk2uthab5dvtf0iq3j.apps.googleusercontent.com";
 
 window.addEventListener('load', () => {
@@ -243,20 +246,6 @@ async function handleGoogleCredential(response) {
     console.error('Google login error:', err);
     showToast('❌ Network error during Google login');
   }
-}
-
-function hasAcceptedPrivacy(){
-  return safeRead('privacy_accepted', false) === true;
-}
-
-function goToPrivacyGate(){
-  window.location.href = 'privacy.html?next=login';
-}
-
-function applyPrivacyGateState(){
-  const overlay = document.getElementById('privacyGateOverlay');
-  if(!overlay) return;
-  overlay.style.display = hasAcceptedPrivacy() ? 'none' : 'block';
 }
 
 // ═══════════════════════════════════════
@@ -382,7 +371,7 @@ function renderOverlayGrid(list){
         ${p.isNew?'<div class="prod-new-tag">NEW</div>':''}
         <div class="prod-brand-tag">${_e(p.brand)}</div>
         <button class="wishlist-heart-btn" data-pid="${p.id}" onclick="event.stopPropagation();toggleWishlist('${p.id}',this)">${isWished(p.id)?'❤️':'🤍'}</button>
-        <img src="${IMAGES[p.img]}" alt="${_e(p.name)}" loading="lazy">
+        <img src="${p.img}" alt="${_e(p.name)}" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-brand">${_e(p.brand)}</div>
@@ -403,7 +392,7 @@ function renderRec(id,excl){
   const el=document.getElementById(id);if(!el)return;
   el.innerHTML=PRODUCTS.filter(p=>p.id!==excl).slice(0,6).map(p=>`
     <div class="rec-card" onclick="openProduct('${p.id}')">
-      <div class="rec-img"><img src="${IMAGES[p.img]}" alt="${_e(p.name)}" loading="lazy"></div>
+      <div class="rec-img"><img src="${p.img}" alt="${_e(p.name)}" loading="lazy"></div>
       <div class="rec-name">${_e(p.name)}</div>
       <div class="rec-price">₹${p.price}</div>
     </div>`).join('');
@@ -425,7 +414,7 @@ function renderCart(){
   const sub=cart.reduce((s,i)=>s+i.price*i.qty,0),del=sub>1500?0:60,tot=sub+del;
   b.innerHTML=cart.map((item,idx)=>`
     <div class="cart-item">
-      <div class="cart-item-img"><img src="${IMAGES[item.img]}" alt="${_e(item.name)}"></div>
+      <div class="cart-item-img"><img src="${item.img}" alt="${_e(item.name)}"></div>
       <div style="flex:1;">
         <div class="cart-item-name">${_e(item.name)}</div>
         <div class="cart-item-meta">Power: ${_e(item.power)} • 6 lenses/box</div>
@@ -460,7 +449,7 @@ async function openProduct(id){
     console.log("Single product detail:", currentProduct);
     closeProdOverlay();
 
-    document.getElementById('detailImg').src = 'assets/images/' + (currentProduct.img || currentProduct.image_url) + '.png';
+    document.getElementById('detailImg').src = currentProduct.img_url || currentProduct.image;
     document.getElementById('detailBrand').textContent=currentProduct.brand;
     document.getElementById('detailName').textContent=currentProduct.name;
     document.getElementById('detailPrice').innerHTML=`₹${currentProduct.price}`;
@@ -904,7 +893,7 @@ function renderWishlistGrid(){
     <div class="product-card" onclick="closeWishlistOverlay();openProduct('${p.id}')">
       <div class="product-img-wrap">
         <button class="wishlist-heart-btn active" data-pid="${p.id}" onclick="event.stopPropagation();toggleWishlist('${p.id}',this);renderWishlistGrid();">❤️</button>
-        <img src="${IMAGES[p.img]}" alt="${_e(p.name)}" loading="lazy">
+        <img src="${p.img}" alt="${_e(p.name)}" loading="lazy">
       </div>
       <div class="product-info">
         <div class="product-brand">${_e(p.brand)}</div>
