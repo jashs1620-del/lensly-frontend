@@ -499,6 +499,20 @@ async function openProduct(id){
   }
 }
 
+const specsE1 = document.getElementById('detailSpecs');
+if (specsE1) {
+  const specs = [
+    ['Material', currentProduct.material],
+    ['Water Content', currentProduct.water_content],
+    ['Base Curve', currentProduct.base_curve],
+    ['Diameter', currentProduct.diameter],
+    ['Power Range', currentProduct.spec_power_range]
+  ].filter(([,v]) => v);
+  specsE1.innerHTML = specs.length
+  ? specs.map(([label,val]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:.82rem;"><span style="color:var(--text-light);">${_e(label)}</span><span style="font-weight:600;align:right;max-width:60%;">${_e(val)}</span></div>`).join('')
+  : '';
+}
+
 function generateStandardPowers(){
   const opts = ['Plano (0.00)'];
   for(let v=0.25; v<=6.00; v+=0.25) opts.push('+'+v.toFixed(2));
