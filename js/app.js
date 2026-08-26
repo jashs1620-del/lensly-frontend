@@ -490,6 +490,20 @@ async function openProduct(id){
     const perBoxEl = document.getElementById('detailPerBox');
     if (perBoxEl) perBoxEl.textContent = `${currentProduct.lens_type || ''} • ${currentProduct.power_type || ''}`;
 
+    const specsE1 = document.getElementById('detailSpecs');
+    if (specsE1) {
+      const specs = [
+        ['Material', currentProduct.material],
+        ['Water Content', currentProduct.water_content],
+        ['Base Curve', currentProduct.base_curve],
+        ['Diameter', currentProduct.diameter],
+        ['Power Range', currentProduct.spec_power_range]
+      ].filter(([,v]) => v);
+      specsE1.innerHTML = specs.length
+        ? specs.map(([label,val]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:.82rem;"><span style="color:var(--text-light);">${_e(label)}</span><span style="font-weight:600;align:right;max-width:60%;">${_e(val)}</span></div>`).join('')
+        : '';
+    }
+
     renderPowerDropdowns(currentProduct);
     renderRec('detailRec', id);
     goTo('detailPage');
@@ -497,20 +511,6 @@ async function openProduct(id){
     console.error('openProduct error:', err);
     showToast('Could not load product details.');
   }
-}
-
-const specsE1 = document.getElementById('detailSpecs');
-if (specsE1) {
-  const specs = [
-    ['Material', currentProduct.material],
-    ['Water Content', currentProduct.water_content],
-    ['Base Curve', currentProduct.base_curve],
-    ['Diameter', currentProduct.diameter],
-    ['Power Range', currentProduct.spec_power_range]
-  ].filter(([,v]) => v);
-  specsE1.innerHTML = specs.length
-  ? specs.map(([label,val]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:.82rem;"><span style="color:var(--text-light);">${_e(label)}</span><span style="font-weight:600;align:right;max-width:60%;">${_e(val)}</span></div>`).join('')
-  : '';
 }
 
 function generateStandardPowers(){
