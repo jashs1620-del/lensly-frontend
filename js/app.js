@@ -1400,7 +1400,7 @@ async function renderProfile(){
       const status = o.status || 'Processing';
       const amount = o.total ? `₹${o.total}` : '';
       const date = o.created_at ? new Date(o.created_at).toLocaleDateString() : '';
-      return `<div class="profile-list-item"> onclick="viewOrderTracking('${o.id}','${status}')">
+      return `<div class="profile-list-item" onclick="viewOrderTracking('${o.id}','${status}')">
         <div class="profile-list-icon">📦</div>
         <div class="profile-list-text">
           <div class="profile-list-title">Order #${_e(String(o.id).slice(0,8))}</div>
