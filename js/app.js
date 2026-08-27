@@ -22,7 +22,7 @@ let PRODUCTS = [];
 
 async function loadAllProducts() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/products?limit=100`);
+        const response = await withSlowLoader(fetch(`${API_BASE_URL}/api/products?limit=100`), 'Loading products...');
         const result = await response.json();
         if (result.success) {
           console.log('raw result from /api/products:', result);
@@ -112,7 +112,12 @@ function runSplash(){
   show(si);
   setTimeout(()=>{const e=document.getElementById('spl'+si);if(e)e.classList.add('out');si=(si+1)%3;setTimeout(()=>show(si),420);},2200);
   setTimeout(()=>{const e=document.getElementById('spl'+si);if(e)e.classList.add('out');si=(si+1)%3;setTimeout(()=>show(si),420);},4600);
-  setTimeout(()=>goToPage('loginPage'),SPLASH_MS);
+  setTimeout(()=>{
+    goToPage('homePage');
+    renderCollections();
+    renderRec('recScroll',0);
+    updateBadges();
+  },SPLASH_MS);
 }
 
 // ═══════════════════════════════════════
@@ -150,6 +155,32 @@ async function tryAutoLogin() {
   }
 }
 
+function requireLogin(){
+  showToast('Please login first');
+  const cur = document.querySelector('.page.active');
+  if(cur) pageHistory.push(cur.id);
+  goToPage('loginPage');
+}
+
+function showAuthLoading(msg){
+  const el = document.getElementById('authLoadingOverlay');
+  const txt = document.getElementById('authLoadingText');
+  if(txt) txt.textContent = msg || 'Loading…';
+  if(el) el.style.display = 'flex';
+}
+function hideAuthLoading(){
+  const el = document.getElementById('authLoadingOverlay');
+  if(el) el.style.display = 'none';
+}
+function withSlowLoader(promise, msg){
+  let shown = false;
+  const timer = setTimeout(()=>{ shown = true; showAuthLoading(msg); }, 10000);
+  return promise.finally(()=>{
+    clearTimeout(timer);
+    if(shown) hideAuthLoading();
+  });
+}
+
 // ═══════════════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════════════
@@ -162,8 +193,9 @@ function goToPage(id){
   const pg=document.getElementById(id);if(pg)pg.classList.add('active');
   window.scrollTo(0,0);
 }
+const AUTH_REQUIRED_PAGES = ['cartPage','checkoutPage','paymentPage','ordersPage','profilePage'];
 function goTo(id){
-  if(!isLoggedIn&&id!=='loginPage'){showToast('Please login first');return;}
+  if(!isLoggedIn && AUTH_REQUIRED_PAGES.includes(id)){ requiredLogin();return; }
   const cur=document.querySelector('.page.active');
   if(cur){
     pageHistory.push(cur.id);
@@ -186,7 +218,7 @@ function goBack(){
   }else goHome();
 }
 function goHome(){
-  if(!isLoggedIn)return;pageHistory=[];pushNative('homePage');goToPage('homePage');
+  pageHistory=[];pushNavState('homePage');goToPage('homePage');
   renderCollections();renderRec('recScroll',0);updateBadges();
 }
 
@@ -349,7 +381,6 @@ function renderCollections(){
 }
 
 function openCollection(key){
-  if(!isLoggedIn){showToast('Please login first');return;}
   const coll=COLLECTIONS.find(c=>c.key===key);
   const list=key==='all'?PRODUCTS:PRODUCTS.filter(p=>p.tags.includes(key));
   openProdOverlayWithList(list,coll?coll.name:'Products');
@@ -448,7 +479,6 @@ function renderCart(){
 //  PRODUCT DETAIL
 // ═══════════════════════════════════════
 async function openProduct(id){
-  if(!isLoggedIn){showToast('Please login first');return;}
   try {
     const response = await fetch(`${API_BASE_URL}/api/products/${id}`);
     const result = await response.json();
@@ -569,7 +599,7 @@ function buyNowClick(){
   addToCart(currentProduct, sel.power, sel.qty).then(()=>goToCheckout());
 }
 function quickAdd(id){
-  if(!isLoggedIn){showToast('Please login first');return;}
+  if(!isLoggedIn){requireLogin();return;}
   const p=PRODUCTS.find(x=>x.id===id);
   addToCart(p,'Ask seller',1);
 }
@@ -925,7 +955,7 @@ function isWished(productId){
 }
 
 async function toggleWishlist(productId, btnEl){
-  if(!isLoggedIn){showToast('Please login first');return;}
+  if(!isLoggedIn){requireLogin();return;}
   const wished = isWished(productId);
   try {
     if (wished) {
@@ -968,7 +998,7 @@ async function toggleWishlist(productId, btnEl){
 }
 
 function openWishlistPage(){
-  if(!isLoggedIn){showToast('Please login first');return;}
+  if(!isLoggedIn){requireLogin();return;}
   renderWishlistGrid();
   document.getElementById('wishlistOverlay').classList.add('open');
 }
@@ -1012,7 +1042,7 @@ function updateAllHeartIcons(){
 //  CART LOGIC
 // ═══════════════════════════════════════
 async function addToCart(product,power,quantity){
-  if(!isLoggedIn){showToast('Please login first');return;}
+  if(!isLoggedIn){requireLogin();return;}
   try {
     const res = await fetch(`${API_BASE_URL}/api/cart`, {
       method: 'POST',
@@ -1541,15 +1571,13 @@ const _skipSplashForPrivacy = _urlParams.get('fromPrivacy') === '1';
 tryAutoLogin().then(async (loggedIn) => {
   if (loggedIn) {
     await Promise.all([loadWishlist(), loadCartFromBackend()]);
-    goToPage('homePage');
-    renderCollections();
-    renderRec('recScroll', 0);
-    updateBadges();
-  } else {
+  }
     if (_skipSplashForPrivacy) {
-      goToPage('loginPage');
+      goToPage('homePage');
+      renderCollections();
+      renderRec('recScroll', 0);
+      updateBadges();
     } else {
       runSplash();
     }
-  }
 });

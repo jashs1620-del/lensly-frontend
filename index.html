@@ -23,6 +23,11 @@
 </svg>
 
 <div class="toast" id="toast"></div>
+<div id="authLoadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.95);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="width:48px;height:48px;border:4px solid #E8E0FF;border-top-color:#6C5CE7;border-radius:50%;animation:authSpin 0.8s linear infinite;"></div>
+  <div id="authLoadingText" style="font-family:'Space Grotesk',sans-serif;font-weight:600;color:#333;font-size:.95rem;">Loading…</div>
+</div>
+<style>@keyframes authSpin{to{transform:rotate(360deg);}}</style>
 
 <!-- REORDER BANNER -->
 <div class="reorder-banner" id="reorderBanner">
