@@ -20,6 +20,12 @@ const API_BASE_URL = "https://lensly-backend.onrender.com";
 // ═══════════════════════════════════════
 let PRODUCTS = [];
 
+function renderBrandChips(){
+  const e1 = document.getElementById('brandChips');
+  if(!e1) return;
+  const brands =[...new Set(PRODUCTS.map(p=>p.brand).filter(Boolean))].sort();
+  e1.innerHTML = brands.map(b=>` <div class="chip active" onclick="toggleChip(this)">${_e(b)}</div>`).join('');
+}
 async function loadAllProducts() {
     try {
         const response = await withSlowLoader(fetch(`${API_BASE_URL}/api/products?limit=100`), 'Loading products...');
@@ -34,6 +40,7 @@ async function loadAllProducts() {
                 name : row.name,
                 material : row.material,
                 type : row.lens_type,
+                powerType : row.power_type,
                 wearDays : row.wear_days,
                 desc : row.description,
                 badges : row.badges || [],
@@ -48,6 +55,7 @@ async function loadAllProducts() {
                 powers : row.powers || []
             }));
             filteredProds = [...PRODUCTS];
+            renderBrandChips();
         } else {
             showToast('could not load products:');
         }
@@ -320,17 +328,18 @@ function clearBrandFilter(){
 function applyFilter(){
   const brandsOn=[...document.querySelectorAll('#brandChips .chip.active')].map(c=>c.textContent.trim());
   const typeOn=[...document.querySelectorAll('#typeChips .chip.active')].map(c=>c.textContent.trim());
-  const powerOn=[...document.querySelectorAll('#powerChips .chip.active')].map(c=>c.textContent.trim());
   const colorsOn=[...document.querySelectorAll('.cc-wrap.active .cc-label')].map(c=>c.textContent.trim());
   const min=parseInt(document.getElementById('priceMin').value)||0;
   const max=parseInt(document.getElementById('priceMax').value)||99999;
   filteredProds=PRODUCTS.filter(p=>{
     const brandOk=!brandsOn.length||brandsOn.includes(p.brand);
-    const typeOk=!typeOn.length||typeOn.some(t=>(t==='For Astigmatism'&&p.forAstig)||(t==='Regular'&&!p.forAstig)||(t==='HD Vision'&&p.type.includes('HD'))||(t==='Monthly'&&p.wearDays===30)||(t==='UV Blocking'&&p.type.toLowerCase().includes('uv')));
-    const powerOk=!powerOn.length||powerOn.some(t=>(t.startsWith('Negative')&&p.powers.some(pw=>pw.startsWith('-')))||(t.startsWith('Positive')&&p.powers.some(pw=>pw.startsWith('+'))));
-    const colorOk=!colorsOn.length||colorsOn.includes(p.color);
+    const typeOk=!typeOn.length||typeOn.some(t=>
+      (p.type && p.type.toLowerCase()===t.toLowerCase()) ||
+      (p.powerType && p.powerType.toLowerCase()===t.toLowerCase())
+    );
+    const colorOk=!colorsOn.length||!p.color||colorsOn.includes(p.color);
     const priceOk=p.price>=min&&p.price<=max;
-    return brandOk&&typeOk&&powerOk&&colorOk&&priceOk;
+    return brandOk&&typeOk&&colorOk&&priceOk;
   });
   closeFilter();
   showToast(filteredProds.length?`✅ ${filteredProds.length} lens${filteredProds.length!==1?'es':''} found`:'😕 No lenses match those filters');
@@ -346,7 +355,7 @@ function clearFilter(){
   document.querySelectorAll('#typeChips .chip').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('#powerChips .chip').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('.cc-wrap').forEach(c=>c.classList.remove('active'));
-  document.querySelector('.cc-wrap').classList.add('active'); // keep Clear colour default on
+  // document.querySelector('.cc-wrap').classList.add('active'); // keep Clear colour default on
   document.getElementById('priceMin').value=300;
   document.getElementById('priceMax').value=3000;
   filteredProds=[...PRODUCTS];closeFilter();showToast('Filters cleared');
