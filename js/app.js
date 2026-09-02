@@ -1378,6 +1378,7 @@ function viewOrderTracking(orderId, status) {
 // ═══════════════════════════════════════
 function signOut(){
   localStorage.removeItem('token');
+  localStorage.removeItem('lensly_privacy_accepted');
   isLoggedIn = false;
   cart = [];
   wishlist = {};
@@ -1386,6 +1387,7 @@ function signOut(){
   document.getElementById('userAvatar').textContent = 'U';
   pageHistory = [];
   updateBadges();
+  applyPrivacyGateState();
   showToast('👋🏻 Signed out');
   goToPage('loginPage');
 }
