@@ -1584,11 +1584,15 @@ tryAutoLogin().then(async (loggedIn) => {
     await Promise.all([loadWishlist(), loadCartFromBackend()]);
   }
     if (_skipSplashForPrivacy) {
-      goToPage('homePage');
-      renderCollections();
-      renderRec('recScroll', 0);
-      updateBadges();
+      if (loggedIn) {
+        goToPage('homePage');
+        renderCollections();
+        renderRec('recScroll', 0);
+        updateBadges();
+      } else {
+        goToPage('loginPage');
+      }
     } else {
-      runSplash();
+        runSplash();
     }
 });
